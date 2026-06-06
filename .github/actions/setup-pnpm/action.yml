@@ -1,13 +1,11 @@
 name: Setup pnpm
-description: Install pnpm 9, Node.js 22, and project dependencies
+description: Install pnpm (from packageManager), Node.js 22, and project dependencies
 
 runs:
   using: composite
   steps:
     - name: Setup pnpm
       uses: pnpm/action-setup@v4
-      with:
-        version: 9
 
     - name: Setup Node.js
       uses: actions/setup-node@v4

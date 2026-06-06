@@ -6,9 +6,9 @@
 
 从发布页面下载对应平台的安装包：
 
-- Windows: `oss-assistant-x.x.x-setup.exe`
-- macOS: `oss-assistant-x.x.x.dmg`
-- Linux: `oss-assistant-x.x.x.AppImage`
+- Windows: `oss-assistant-v{version}-win-x64-setup.exe`
+- macOS: `oss-assistant-v{version}-mac-{arch}.dmg`
+- Linux: `oss-assistant-v{version}-linux-{arch}.AppImage`
 
 ### 2. 添加云账户
 

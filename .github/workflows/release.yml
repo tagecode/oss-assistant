@@ -41,39 +41,39 @@ jobs:
             platform: mac
             arch: arm64
             artifact_glob: |
-              release/oss-assistant-*.dmg
-              release/oss-assistant-*.zip
+              release/oss-assistant-v*.dmg
+              release/oss-assistant-v*.zip
               release/latest-mac.yml
               release/*.blockmap
           - os: macos-15
             platform: mac
             arch: x64
             artifact_glob: |
-              release/oss-assistant-*.dmg
-              release/oss-assistant-*.zip
+              release/oss-assistant-v*.dmg
+              release/oss-assistant-v*.zip
               release/latest-mac.yml
               release/*.blockmap
           - os: windows-latest
             platform: win
             arch: x64
             artifact_glob: |
-              release/oss-assistant-*-setup.exe
+              release/oss-assistant-v*-setup.exe
               release/latest.yml
               release/*.blockmap
           - os: ubuntu-latest
             platform: linux
             arch: x64
             artifact_glob: |
-              release/oss-assistant-*.AppImage
-              release/oss-assistant_*.deb
+              release/oss-assistant-v*.AppImage
+              release/oss-assistant-v*.deb
               release/latest-linux.yml
               release/*.blockmap
           - os: ubuntu-24.04-arm
             platform: linux
             arch: arm64
             artifact_glob: |
-              release/oss-assistant-*.AppImage
-              release/oss-assistant_*.deb
+              release/oss-assistant-v*.AppImage
+              release/oss-assistant-v*.deb
               release/latest-linux.yml
               release/*.blockmap
 
@@ -122,11 +122,11 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            artifacts/**/oss-assistant-*.dmg
-            artifacts/**/oss-assistant-*.zip
-            artifacts/**/oss-assistant-*-setup.exe
-            artifacts/**/oss-assistant-*.AppImage
-            artifacts/**/oss-assistant_*.deb
+            artifacts/**/oss-assistant-v*.dmg
+            artifacts/**/oss-assistant-v*.zip
+            artifacts/**/oss-assistant-v*-setup.exe
+            artifacts/**/oss-assistant-v*.AppImage
+            artifacts/**/oss-assistant-v*.deb
             artifacts/**/latest.yml
             artifacts/**/latest-mac.yml
             artifacts/**/latest-linux.yml
@@ -139,10 +139,10 @@ jobs:
 
             | 平台 | 架构 | 格式 | 文件示例 |
             |------|------|------|----------|
-            | macOS | arm64 | `.dmg` / `.zip` | `oss-assistant-{version}.dmg` |
-            | macOS | x64 | `.dmg` / `.zip` | Intel Mac（在 Apple Silicon runner 交叉编译） |
-            | Windows | x64 | `.exe` (NSIS) | `oss-assistant-{version}-setup.exe` |
-            | Linux | x64 / arm64 | `.AppImage` / `.deb` | `oss-assistant-{version}.AppImage`、`oss-assistant_{version}_{arch}.deb` |
+            | macOS | arm64 | `.dmg` / `.zip` | `oss-assistant-v{version}-mac-arm64.dmg` |
+            | macOS | x64 | `.dmg` / `.zip` | `oss-assistant-v{version}-mac-x64.dmg`（Apple Silicon runner 交叉编译） |
+            | Windows | x64 | `.exe` (NSIS) | `oss-assistant-v{version}-win-x64-setup.exe` |
+            | Linux | x64 / arm64 | `.AppImage` / `.deb` | `oss-assistant-v{version}-linux-x64.AppImage`、`oss-assistant-v{version}-linux-arm64.deb` |
 
             当前为**未签名**构建：macOS 首次打开可能需在「系统设置 → 隐私与安全性」中允许；Windows 可能触发 SmartScreen 提示。
 

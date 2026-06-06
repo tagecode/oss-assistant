@@ -2,10 +2,10 @@
   "name": "oss-assistant",
   "version": "1.0.0",
   "packageManager": "pnpm@9.15.9",
-  "description": "一款跨平台的桌面端对象存储管理工具。",
+  "description": "一款跨平台的桌面端对象存储（OSS）管理工具。",
   "license": "MIT",
   "main": "./out/main/index.js",
-  "author": "OSS Assistant contributors",
+  "author": "TageCode <tagecode@hotmail.com>",
   "homepage": "https://github.com/tagecode/oss-assistant#readme",
   "repository": {
     "type": "git",

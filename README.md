@@ -30,9 +30,9 @@
 
 | 平台 | 文件名示例 |
 | ---- | ---------- |
-| Windows | `oss-assistant-1.0.0-setup.exe` |
-| macOS | `oss-assistant-1.0.0.dmg` |
-| Linux | `oss-assistant-1.0.0.AppImage` |
+| Windows | `oss-assistant-v1.0.0-win-x64-setup.exe` |
+| macOS | `oss-assistant-v1.0.0-mac-arm64.dmg` |
+| Linux | `oss-assistant-v1.0.0-linux-x64.AppImage` |
 
 详细使用说明见 [用户指南](docs/USER_GUIDE.md)。
 
