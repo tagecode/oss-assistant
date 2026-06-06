@@ -3,7 +3,7 @@
 ## 构建前
 
 - [ ] `pnpm typecheck` 通过
-- [ ] `pnpm lint` 无 error
+- [ ] `pnpm lint` 无 error（CI Verify 阶段已包含）
 - [ ] `pnpm test` 单元测试和组件测试通过
 - [ ] `pnpm build` 生产构建成功
 - [ ] 版本号已在 `package.json` 更新

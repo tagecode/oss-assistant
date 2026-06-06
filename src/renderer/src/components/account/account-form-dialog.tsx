@@ -130,8 +130,6 @@ function AccountFormBody({
 
   useEffect(() => {
     if (!open) return
-    setShowAccessKey(false)
-    setShowSecret(false)
     form.reset({
       name: account?.name ?? '',
       provider: account?.provider ?? 'qiniu',
