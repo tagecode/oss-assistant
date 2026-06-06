@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/tagecode/oss-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/tagecode/oss-assistant/actions/workflows/ci.yml)
 
-跨平台桌面对象存储管理工具。在一个应用中管理七牛云、阿里云 OSS、AWS S3 及 S3 兼容服务的账户、存储桶与文件，支持上传、下载、删除与任务进度追踪。
+一款跨平台的对象存储管理工具桌面应用。在一个应用中管理七牛云、阿里云 OSS、AWS S3 及 S3 兼容服务的账户、存储桶与文件，支持上传、下载、删除与任务进度追踪。
 
 ## 功能特性
 
