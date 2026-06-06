@@ -1,5 +1,7 @@
 # OSS 助手 - 用户指南
 
+[English User Guide](USER_GUIDE.en.md)
+
 ## 快速开始
 
 ### 1. 安装应用

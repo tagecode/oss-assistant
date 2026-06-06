@@ -1,7 +1,9 @@
-# OSS 助手
+# OSS 助手（OSS Assistant）
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/tagecode/oss-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/tagecode/oss-assistant/actions/workflows/ci.yml)
+
+[English README](README.en.md)
 
 一款跨平台的对象存储管理工具桌面应用。在一个应用中管理七牛云、阿里云 OSS、AWS S3 及 S3 兼容服务的账户、存储桶与文件，支持上传、下载、删除与任务进度追踪。
 
@@ -34,7 +36,7 @@
 | macOS | `oss-assistant-v1.0.0-mac-arm64.dmg` |
 | Linux | `oss-assistant-v1.0.0-linux-x64.AppImage` |
 
-详细使用说明见 [用户指南](docs/USER_GUIDE.md)。
+详细使用说明见 [用户指南](docs/USER_GUIDE.md)（[English](docs/USER_GUIDE.en.md)）。
 
 ## 截图
 
@@ -164,7 +166,7 @@ git push origin v1.0.0
 
 ## 相关文档
 
-- [用户指南](docs/USER_GUIDE.md)
+- [用户指南](docs/USER_GUIDE.md) · [User Guide (EN)](docs/USER_GUIDE.en.md)
 - [发布检查清单](docs/RELEASE_CHECKLIST.md)
 - [变更日志](CHANGELOG.md)
 
