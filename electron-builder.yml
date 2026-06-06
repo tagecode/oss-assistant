@@ -17,8 +17,11 @@ win:
 nsis:
   artifactName: ${name}-v${version}-${os}-${arch}-setup.${ext}
   shortcutName: ${productName}
-  uninstallDisplayName: ${productName}
+  uninstallDisplayName: ${productName} v${version}
   createDesktopShortcut: always
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createStartMenuShortcut: true
 mac:
   artifactName: ${name}-v${version}-${os}-${arch}.${ext}
   target:
@@ -26,8 +29,6 @@ mac:
     - zip
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
-    - NSCameraUsageDescription: Application requests access to the device's camera.
-    - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
     - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
   notarize: false
