@@ -36,7 +36,12 @@ export function useAccounts(): {
 
   const testMutation = useMutation({
     mutationFn: ({ input, accountId }: { input: Partial<AccountInput>; accountId?: string }) =>
-      window.api.testConnection(input, accountId)
+      window.api.testConnection(input, accountId),
+    onSettled: (_data, _error, variables) => {
+      if (variables.accountId) {
+        queryClient.invalidateQueries({ queryKey: ['accounts'] })
+      }
+    }
   })
 
   return {

@@ -31,7 +31,7 @@ export function registerIpcHandlers(
     'accounts:testConnection',
     async (_e, input: Partial<AccountInput>, accountId?: string) => {
       const resolved = accountService.resolveForConnection(accountId, input)
-      await storageService.testConnection(resolved)
+      await storageService.testConnection(resolved, accountId)
     }
   )
 

@@ -54,27 +54,59 @@ export class StorageService {
     }
   }
 
-  async testConnection(input: AccountInput): Promise<void> {
+  private async trackConnectionStatus<T>(
+    accountId: string | undefined,
+    action: () => Promise<T>
+  ): Promise<T> {
+    try {
+      const result = await action()
+      if (accountId) {
+        this.accountService.updateConnectionStatus(accountId, 'connected')
+      }
+      return result
+    } catch (error) {
+      if (accountId) {
+        this.accountService.updateConnectionStatus(accountId, 'failed')
+      }
+      throw error
+    }
+  }
+
+  async testConnection(input: AccountInput, accountId?: string): Promise<void> {
     const provider = this.getProvider(input.provider)
     if (!input.accessKeyId || !input.secretKey) {
       throw new Error('Access Key ID 和 Secret Key 不能为空')
     }
-    await provider.testConnection(this.getCredentialsFromInput(input as Required<AccountInput>))
+    await this.trackConnectionStatus(accountId, () =>
+      provider.testConnection(this.getCredentialsFromInput(input as Required<AccountInput>))
+    )
   }
 
   async testConnectionById(accountId: string): Promise<void> {
     const account = this.accountService.getById(accountId)
     if (!account) throw new Error('账户不存在')
-    const provider = this.getProvider(account.provider)
-    await provider.testConnection(this.getCredentials(accountId))
-    this.accountService.updateConnectionStatus(accountId, 'connected')
+    await this.testConnection(
+      {
+        name: account.name,
+        provider: account.provider,
+        accessKeyId: this.accountService.getAccessKey(accountId),
+        secretKey: this.accountService.getSecret(accountId),
+        region: account.region,
+        endpoint: account.endpoint,
+        bucketDomain: account.bucketDomain,
+        pathStyleAccess: account.pathStyleAccess
+      },
+      accountId
+    )
   }
 
   async listBuckets(accountId: string): Promise<BucketInfo[]> {
     const account = this.accountService.getById(accountId)
     if (!account) throw new Error('账户不存在')
     const provider = this.getProvider(account.provider)
-    return provider.listBuckets(this.getCredentials(accountId))
+    return this.trackConnectionStatus(accountId, () =>
+      provider.listBuckets(this.getCredentials(accountId))
+    )
   }
 
   async listObjects(

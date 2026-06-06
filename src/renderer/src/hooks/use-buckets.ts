@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { BucketInfo } from '../../../shared/types/storage'
 
 export function useBuckets(accountId: string | null): {
@@ -7,9 +7,16 @@ export function useBuckets(accountId: string | null): {
   error: Error | null
   refetch: () => void
 } {
+  const queryClient = useQueryClient()
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['buckets', accountId],
-    queryFn: () => window.api.listBuckets(accountId!),
+    queryFn: async () => {
+      try {
+        return await window.api.listBuckets(accountId!)
+      } finally {
+        void queryClient.invalidateQueries({ queryKey: ['accounts'] })
+      }
+    },
     enabled: !!accountId
   })
 
