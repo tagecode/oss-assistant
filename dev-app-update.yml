@@ -1,0 +1,4 @@
+provider: github
+owner: tagecode
+repo: oss-assistant
+updaterCacheDirName: oss-assistant-updater

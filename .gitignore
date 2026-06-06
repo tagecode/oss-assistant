@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+out/
+release/
+
+# Test & coverage
+coverage/
+test-results/
+playwright-report/
+playwright/.cache/
+blob-report/
+
+# Logs & caches
+*.log*
+.eslintcache
+*.tsbuildinfo
+
+# Environment & secrets（切勿提交密钥）
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.pfx
+credentials/
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor / IDE
+.idea/
+*.swp
+*.swo
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/settings.json
+
+# Cursor（保留项目规则，忽略本地 skills 与索引）
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
+
+# CodeGraph 本地索引（每台机器独立生成）
+.codegraph/

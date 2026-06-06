@@ -1,0 +1,151 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+jobs:
+  validate:
+    name: Verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify tag matches package.json
+        if: startsWith(github.ref, 'refs/tags/')
+        run: node scripts/check-release-version.mjs
+
+      - name: Setup pnpm
+        uses: ./.github/actions/setup-pnpm
+
+      - name: Verify
+        uses: ./.github/actions/verify
+
+  build:
+    name: Build (${{ matrix.platform }} / ${{ matrix.arch }})
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            platform: mac
+            arch: arm64
+            artifact_glob: |
+              release/oss-assistant-*.dmg
+              release/oss-assistant-*.zip
+              release/latest-mac.yml
+              release/*.blockmap
+          - os: macos-15
+            platform: mac
+            arch: x64
+            artifact_glob: |
+              release/oss-assistant-*.dmg
+              release/oss-assistant-*.zip
+              release/latest-mac.yml
+              release/*.blockmap
+          - os: windows-latest
+            platform: win
+            arch: x64
+            artifact_glob: |
+              release/oss-assistant-*-setup.exe
+              release/latest.yml
+              release/*.blockmap
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+            artifact_glob: |
+              release/oss-assistant-*.AppImage
+              release/oss-assistant_*.deb
+              release/latest-linux.yml
+              release/*.blockmap
+          - os: ubuntu-24.04-arm
+            platform: linux
+            arch: arm64
+            artifact_glob: |
+              release/oss-assistant-*.AppImage
+              release/oss-assistant_*.deb
+              release/latest-linux.yml
+              release/*.blockmap
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: ./.github/actions/setup-pnpm
+
+      - name: Install Linux build dependencies
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: bash scripts/ci-install-linux-build-deps.sh
+
+      - name: Package (${{ matrix.platform }} / ${{ matrix.arch }})
+        shell: bash
+        run: node scripts/ci-package.mjs
+        env:
+          CI_PLATFORM: ${{ matrix.platform }}
+          CI_ARCH: ${{ matrix.arch }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}-${{ matrix.arch }}-dist
+          path: ${{ matrix.artifact_glob }}
+          if-no-files-found: error
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/**/oss-assistant-*.dmg
+            artifacts/**/oss-assistant-*.zip
+            artifacts/**/oss-assistant-*-setup.exe
+            artifacts/**/oss-assistant-*.AppImage
+            artifacts/**/oss-assistant_*.deb
+            artifacts/**/latest.yml
+            artifacts/**/latest-mac.yml
+            artifacts/**/latest-linux.yml
+            artifacts/**/*.blockmap
+          generate_release_notes: true
+          body: |
+            ## 安装说明
+
+            产物命名遵循 `electron-builder.yml`：
+
+            | 平台 | 架构 | 格式 | 文件示例 |
+            |------|------|------|----------|
+            | macOS | arm64 | `.dmg` / `.zip` | `oss-assistant-{version}.dmg` |
+            | macOS | x64 | `.dmg` / `.zip` | Intel Mac（在 Apple Silicon runner 交叉编译） |
+            | Windows | x64 | `.exe` (NSIS) | `oss-assistant-{version}-setup.exe` |
+            | Linux | x64 / arm64 | `.AppImage` / `.deb` | `oss-assistant-{version}.AppImage`、`oss-assistant_{version}_{arch}.deb` |
+
+            当前为**未签名**构建：macOS 首次打开可能需在「系统设置 → 隐私与安全性」中允许；Windows 可能触发 SmartScreen 提示。
+
+            用户数据（账户、设置）保存在系统用户目录，升级安装不会覆盖。
+
+            详见 [docs/RELEASE_CHECKLIST.md](https://github.com/${{ github.repository }}/blob/main/docs/RELEASE_CHECKLIST.md)。

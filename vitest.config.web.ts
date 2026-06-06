@@ -1,0 +1,18 @@
+import { resolve } from 'path'
+import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vitest/config'
+
+export default defineConfig({
+  plugins: [react()],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    include: ['tests/component/**/*.test.tsx'],
+    setupFiles: ['./tests/setup.web.ts']
+  },
+  resolve: {
+    alias: {
+      '@': resolve('src/renderer/src')
+    }
+  }
+})
