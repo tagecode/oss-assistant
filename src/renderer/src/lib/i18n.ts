@@ -50,6 +50,8 @@ const messages = {
     notConnected: '未连接',
     edit: '编辑',
     taskCenter: '任务中心',
+    openTaskCenter: '打开任务中心',
+    closeTaskCenter: '关闭任务中心',
     clearCompleted: '清理已完成',
     clearCompletedConfirmTitle: '清理已完成任务',
     clearCompletedConfirm:
@@ -219,6 +221,8 @@ const messages = {
     notConnected: 'Not connected',
     edit: 'Edit',
     taskCenter: 'Task Center',
+    openTaskCenter: 'Open task center',
+    closeTaskCenter: 'Close task center',
     clearCompleted: 'Clear completed',
     clearCompletedConfirmTitle: 'Clear completed tasks',
     clearCompletedConfirm:

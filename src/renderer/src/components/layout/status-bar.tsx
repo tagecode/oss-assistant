@@ -5,13 +5,15 @@ import { cn } from '@/lib/utils'
 interface StatusBarProps {
   activeTaskCount: number
   connectionStatus?: string
-  onOpenTransferCenter: () => void
+  transferCenterOpen?: boolean
+  onToggleTransferCenter: () => void
 }
 
 export function StatusBar({
   activeTaskCount,
   connectionStatus,
-  onOpenTransferCenter
+  transferCenterOpen = false,
+  onToggleTransferCenter
 }: StatusBarProps): React.JSX.Element {
   const { tr } = useI18n()
 
@@ -20,10 +22,11 @@ export function StatusBar({
       <button
         type="button"
         data-testid="open-transfer-center"
-        onClick={onOpenTransferCenter}
+        aria-pressed={transferCenterOpen}
+        onClick={onToggleTransferCenter}
         className={cn(
           'flex items-center gap-1.5 transition-colors hover:text-foreground cursor-pointer',
-          activeTaskCount > 0 && 'text-primary'
+          (activeTaskCount > 0 || transferCenterOpen) && 'text-primary'
         )}
       >
         <Activity className="size-3.5" />

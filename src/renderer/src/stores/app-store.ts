@@ -17,6 +17,7 @@ interface AppState {
   toggleKey: (key: string) => void
   clearSelection: () => void
   setTransferCenterOpen: (open: boolean) => void
+  toggleTransferCenter: () => void
   setSettingsOpen: (open: boolean) => void
   setHelpOpen: (open: boolean) => void
   setAccountDialogOpen: (open: boolean, editingId?: string | null) => void
@@ -51,6 +52,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   clearSelection: () => set({ selectedKeys: new Set() }),
   setTransferCenterOpen: (open) => set({ transferCenterOpen: open }),
+  toggleTransferCenter: () => set((state) => ({ transferCenterOpen: !state.transferCenterOpen })),
   setSettingsOpen: (open) => set({ settingsOpen: open }),
   setHelpOpen: (open) => set({ helpOpen: open }),
   setAccountDialogOpen: (open, editingId = null) =>

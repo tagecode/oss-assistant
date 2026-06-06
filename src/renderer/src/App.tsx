@@ -150,6 +150,8 @@ function AppContent(): React.JSX.Element {
       : tr('accountLabel', { name: selectedAccount.name })
     : undefined
 
+  const toggleTransferCenter = store.toggleTransferCenter
+
   const sharedDialogs = (
     <>
       <AccountFormDialog
@@ -197,11 +199,15 @@ function AppContent(): React.JSX.Element {
         <AppHeader
           onOpenSettings={() => store.setSettingsOpen(true)}
           onOpenHelp={() => store.setHelpOpen(true)}
+          transferCenterOpen={store.transferCenterOpen}
+          activeTaskCount={activeCount}
+          onToggleTransferCenter={toggleTransferCenter}
         />
         <AccountEmptyState onAdd={() => store.setAccountDialogOpen(true)} />
         <StatusBar
           activeTaskCount={activeCount}
-          onOpenTransferCenter={() => store.setTransferCenterOpen(true)}
+          transferCenterOpen={store.transferCenterOpen}
+          onToggleTransferCenter={toggleTransferCenter}
         />
         {sharedDialogs}
       </div>
@@ -213,6 +219,9 @@ function AppContent(): React.JSX.Element {
       <AppHeader
         onOpenSettings={() => store.setSettingsOpen(true)}
         onOpenHelp={() => store.setHelpOpen(true)}
+        transferCenterOpen={store.transferCenterOpen}
+        activeTaskCount={activeCount}
+        onToggleTransferCenter={toggleTransferCenter}
       />
 
       <div className="flex flex-1 overflow-hidden">
@@ -292,7 +301,8 @@ function AppContent(): React.JSX.Element {
       <StatusBar
         activeTaskCount={activeCount}
         connectionStatus={connectionStatus}
-        onOpenTransferCenter={() => store.setTransferCenterOpen(true)}
+        transferCenterOpen={store.transferCenterOpen}
+        onToggleTransferCenter={toggleTransferCenter}
       />
 
       {sharedDialogs}
