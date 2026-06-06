@@ -1,5 +1,7 @@
 # E2E 测试说明
 
+> **CI 不运行 E2E。** GitHub Actions 仅执行 typecheck、单元/组件测试与生产构建。E2E 请在本地或发版前手动执行。
+
 ## 前置条件
 
 1. 先执行生产构建：`pnpm build`
@@ -25,7 +27,7 @@ E2E 断言使用 `data-testid` 与稳定表单 `id`（如 `#name`），不依赖
 
 ## 云存储 E2E
 
-### Mock 模式（CI 默认）
+### Mock 模式（推荐本地 / 发版前）
 
 无需真实云凭证，使用内存 Mock Provider：
 

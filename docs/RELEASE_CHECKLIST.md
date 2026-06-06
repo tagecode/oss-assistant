@@ -57,7 +57,7 @@ pnpm build:linux
 - [ ] AppImage 可执行
 - [ ] deb 包可安装（如生成）
 
-## E2E 测试
+## E2E 测试（本地 / 发版前手动，CI 不跑）
 
 ```bash
 pnpm build

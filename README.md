@@ -92,17 +92,22 @@ pnpm format      # Prettier 格式化
 ### 测试
 
 ```bash
-pnpm test              # 单元测试 + 组件测试
+pnpm test              # 单元测试 + 组件测试（CI 会跑）
 pnpm test:unit         # 仅主进程单元测试
 pnpm test:component    # 仅渲染进程组件测试
+```
 
-# E2E（需先 build，使用 Mock 云存储，无需真实密钥）
+**CI 流水线**：typecheck → 单元/组件测试 → 生产构建（不含 E2E）。
+
+**E2E（本地 / 发版前手动）**：
+
+```bash
 pnpm build
 pnpm exec playwright install --with-deps
 E2E_MOCK_CLOUD=1 pnpm test:e2e
 ```
 
-E2E 说明见 [tests/e2e/README.md](tests/e2e/README.md)。
+说明见 [tests/e2e/README.md](tests/e2e/README.md)。
 
 ## 项目结构
 

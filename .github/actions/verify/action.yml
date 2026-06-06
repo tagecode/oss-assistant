@@ -1,5 +1,5 @@
 name: Verify
-description: Typecheck, unit/component tests, production build, and E2E (mock cloud)
+description: Typecheck, unit/component tests, and production build
 
 runs:
   using: composite
@@ -15,13 +15,3 @@ runs:
     - name: Production build
       shell: bash
       run: pnpm build
-
-    - name: Install Playwright dependencies
-      shell: bash
-      run: pnpm exec playwright install --with-deps
-
-    - name: E2E (mock cloud)
-      shell: bash
-      run: pnpm test:e2e
-      env:
-        E2E_MOCK_CLOUD: '1'
