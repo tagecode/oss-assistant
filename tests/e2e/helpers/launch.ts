@@ -6,12 +6,14 @@ import path from 'path'
 
 export async function launchApp(options?: {
   mockCloud?: boolean
+  userDataDir?: string
 }): Promise<{ app: ElectronApplication; window: Page; userDataDir: string }> {
-  const userDataDir = path.join(
-    os.tmpdir(),
-    `oss-e2e-${Date.now()}-${Math.random().toString(36).slice(2)}`
-  )
-  fs.mkdirSync(userDataDir, { recursive: true })
+  const userDataDir =
+    options?.userDataDir ??
+    path.join(os.tmpdir(), `oss-e2e-${Date.now()}-${Math.random().toString(36).slice(2)}`)
+  if (!options?.userDataDir) {
+    fs.mkdirSync(userDataDir, { recursive: true })
+  }
 
   const mainArgs = [
     path.join(__dirname, '../../../out/main/index.js'),

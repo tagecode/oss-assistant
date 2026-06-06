@@ -3,14 +3,16 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 const mocks = vi.hoisted(() => {
   const listBucketsMock = vi.fn()
   const listMock = vi.fn()
+  const getBucketAclMock = vi.fn()
   class MockOSS {
     listBuckets = listBucketsMock
     list = listMock
+    getBucketACL = getBucketAclMock
     constructor() {
       /* mock client */
     }
   }
-  return { listBucketsMock, listMock, MockOSS }
+  return { listBucketsMock, listMock, getBucketAclMock, MockOSS }
 })
 
 vi.mock('ali-oss', () => ({
@@ -29,9 +31,10 @@ describe('AliyunOssProvider', () => {
   beforeEach(() => {
     mocks.listBucketsMock.mockReset()
     mocks.listMock.mockReset()
+    mocks.getBucketAclMock.mockReset()
   })
 
-  it('lists buckets with metadata', async () => {
+  it('lists buckets with metadata and access', async () => {
     mocks.listBucketsMock.mockResolvedValue({
       buckets: [
         {
@@ -41,6 +44,7 @@ describe('AliyunOssProvider', () => {
         }
       ]
     })
+    mocks.getBucketAclMock.mockResolvedValue({ acl: 'public-read' })
 
     const provider = new AliyunOssProvider()
     const buckets = await provider.listBuckets(credentials)
@@ -50,7 +54,7 @@ describe('AliyunOssProvider', () => {
         name: 'my-bucket',
         region: 'oss-cn-hangzhou',
         createdAt: '2026-01-15T08:00:00.000Z',
-        permission: 'unknown'
+        permission: 'public'
       }
     ])
   })

@@ -3,6 +3,7 @@ import { QiniuProvider } from '../../../src/main/providers/qiniu-provider'
 
 const listPrefixMock = vi.fn()
 const listBucketMock = vi.fn()
+const getBucketInfoMock = vi.fn()
 
 vi.mock('qiniu', () => {
   class MockMac {
@@ -17,6 +18,7 @@ vi.mock('qiniu', () => {
   class MockBucketManager {
     listBucket = listBucketMock
     listPrefix = listPrefixMock
+    getBucketInfo = getBucketInfoMock
   }
 
   class MockPutPolicy {
@@ -57,19 +59,24 @@ describe('QiniuProvider', () => {
   beforeEach(() => {
     listBucketMock.mockReset()
     listPrefixMock.mockReset()
+    getBucketInfoMock.mockReset()
   })
 
-  it('lists buckets', async () => {
+  it('lists buckets with public/private access', async () => {
     listBucketMock.mockResolvedValue({
       ok: () => true,
       data: ['assets', 'backup']
     })
+    getBucketInfoMock.mockImplementation(async (name: string) => ({
+      ok: () => true,
+      data: { private: name === 'assets' ? 0 : 1 }
+    }))
 
     const provider = new QiniuProvider()
     const buckets = await provider.listBuckets(credentials)
     expect(buckets).toEqual([
-      { name: 'assets', permission: 'unknown' },
-      { name: 'backup', permission: 'unknown' }
+      { name: 'assets', permission: 'public' },
+      { name: 'backup', permission: 'private' }
     ])
   })
 

@@ -35,7 +35,7 @@ export class E2eMockProvider implements StorageProvider {
         name: MOCK_BUCKET,
         region: 'mock-region',
         createdAt: '2026-01-01T00:00:00.000Z',
-        permission: 'readwrite'
+        permission: 'private'
       }
     ]
   }

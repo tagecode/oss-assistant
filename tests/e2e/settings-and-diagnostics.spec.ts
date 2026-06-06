@@ -43,4 +43,35 @@ test.describe('设置与诊断', () => {
     fs.rmSync(exportPath, { force: true })
     await closeApp(app, userDataDir)
   })
+
+  test('设置保存后重启应用仍生效', async () => {
+    const { app, window, userDataDir } = await launchApp()
+
+    await window.getByTestId(testId.headerSettings).click()
+    await expect(window.getByTestId(testId.settingsDialog)).toBeVisible()
+
+    await window.getByTestId(testId.settingsLogRetention).fill('21')
+    await window.waitForFunction(
+      async () => (await window.api.getSettings()).logRetentionDays === 21
+    )
+
+    const autoUpdate = window.getByTestId(testId.settingsAutoUpdate)
+    if ((await autoUpdate.getAttribute('data-state')) !== 'checked') {
+      await autoUpdate.click()
+      await window.waitForFunction(
+        async () => (await window.api.getSettings()).autoCheckUpdate === true
+      )
+    }
+
+    await window.keyboard.press('Escape')
+    await app.close()
+
+    const { app: relaunched, window: relaunchedWindow } = await launchApp({ userDataDir })
+    const persisted = await relaunchedWindow.evaluate(async () => window.api.getSettings())
+
+    expect(persisted.logRetentionDays).toBe(21)
+    expect(persisted.autoCheckUpdate).toBe(true)
+
+    await closeApp(relaunched, userDataDir)
+  })
 })

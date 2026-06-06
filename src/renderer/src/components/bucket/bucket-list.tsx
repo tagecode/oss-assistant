@@ -2,6 +2,7 @@ import { Database } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useI18n } from '@/hooks/use-i18n'
+import { bucketPermissionLabel } from '@/lib/i18n'
 import { cn, formatDate } from '@/lib/utils'
 import type { BucketInfo } from '../../../../shared/types/storage'
 
@@ -51,8 +52,17 @@ export function BucketList({
                 <Database className="size-4 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-medium">{bucket.name}</div>
-                  {bucket.region && (
-                    <div className="truncate text-xs text-muted-foreground">{bucket.region}</div>
+                  {(bucket.region || (bucket.permission && bucket.permission !== 'unknown')) && (
+                    <div className="truncate text-xs text-muted-foreground">
+                      {[
+                        bucket.region,
+                        bucket.permission &&
+                          bucket.permission !== 'unknown' &&
+                          bucketPermissionLabel(locale, bucket.permission)
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </div>
                   )}
                   {bucket.createdAt && (
                     <div className="truncate text-xs text-muted-foreground">

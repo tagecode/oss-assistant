@@ -4,6 +4,7 @@ import { stat } from 'fs/promises'
 import { pipeline } from 'stream/promises'
 import type { BucketInfo, ListObjectsResult, StorageObject } from '../../shared/types/storage'
 import { type ProviderCredentials, type StorageProvider, calcProgress } from './base-provider'
+import { parseAliyunBucketAcl } from './bucket-access'
 import { mapError } from './provider-errors'
 
 export class AliyunOssProvider implements StorageProvider {
@@ -29,12 +30,25 @@ export class AliyunOssProvider implements StorageProvider {
     try {
       const client = this.createClient(credentials)
       const result = await client.listBuckets()
-      return (result.buckets || []).map((b) => ({
-        name: b.name,
-        region: b.region,
-        createdAt: b.creationDate,
-        permission: 'unknown' as const
-      }))
+      return Promise.all(
+        (result.buckets || []).map(async (b) => {
+          let permission = parseAliyunBucketAcl(undefined)
+          try {
+            const bucketClient = this.createClient(credentials, b.name)
+            const aclResult = await bucketClient.getBucketACL(b.name)
+            permission = parseAliyunBucketAcl(aclResult.acl)
+          } catch {
+            // Keep unknown when ACL lookup is unavailable.
+          }
+
+          return {
+            name: b.name,
+            region: b.region,
+            createdAt: b.creationDate,
+            permission
+          }
+        })
+      )
     } catch (error) {
       throw mapError(error)
     }

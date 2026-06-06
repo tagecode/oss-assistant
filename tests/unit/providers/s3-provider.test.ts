@@ -32,6 +32,9 @@ vi.mock('@aws-sdk/client-s3', () => ({
   },
   DeleteObjectsCommand: class DeleteObjectsCommand {
     constructor(public input: unknown) {}
+  },
+  GetBucketAclCommand: class GetBucketAclCommand {
+    constructor(public input: unknown) {}
   }
 }))
 
@@ -118,12 +121,20 @@ describe('S3Provider', () => {
     expect(onProgress).toHaveBeenCalled()
   })
 
-  it('returns normalized bucket regions when listing buckets for AWS S3', async () => {
+  it('returns normalized bucket regions and access when listing buckets for AWS S3', async () => {
     sendMock
       .mockResolvedValueOnce({
         Buckets: [{ Name: 'ireland-bucket', CreationDate: new Date('2026-01-01T00:00:00.000Z') }]
       })
       .mockResolvedValueOnce({ BucketRegion: 'eu-west-1' })
+      .mockResolvedValueOnce({
+        Grants: [
+          {
+            Grantee: { URI: 'http://acs.amazonaws.com/groups/global/AllUsers' },
+            Permission: 'READ'
+          }
+        ]
+      })
 
     const provider = new S3Provider()
     const buckets = await provider.listBuckets(awsCredentials)
@@ -131,7 +142,8 @@ describe('S3Provider', () => {
     expect(buckets).toEqual([
       expect.objectContaining({
         name: 'ireland-bucket',
-        region: 'eu-west-1'
+        region: 'eu-west-1',
+        permission: 'public'
       })
     ])
   })

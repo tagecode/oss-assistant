@@ -46,7 +46,7 @@ export interface BucketInfo {
   name: string
   region?: string
   createdAt?: string
-  permission?: 'readonly' | 'readwrite' | 'unknown'
+  permission?: 'public' | 'private' | 'unknown'
 }
 
 export interface StorageObject {

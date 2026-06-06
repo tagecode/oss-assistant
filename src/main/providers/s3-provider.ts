@@ -5,6 +5,7 @@ import {
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectsCommand,
+  GetBucketAclCommand,
   GetBucketLocationCommand,
   HeadBucketCommand
 } from '@aws-sdk/client-s3'
@@ -19,6 +20,7 @@ import {
   isAwsBucketEndpointError,
   normalizeAwsBucketRegion
 } from './s3-aws-utils'
+import { parseS3BucketGrants } from './bucket-access'
 import { mapError } from './provider-errors'
 
 export class S3Provider implements StorageProvider {
@@ -148,21 +150,31 @@ export class S3Provider implements StorageProvider {
     try {
       const client = this.createClient(credentials)
       const response = await client.send(new ListBucketsCommand({}))
-      const buckets = (response.Buckets || []).map((b) => ({
-        name: b.Name || '',
-        createdAt: b.CreationDate?.toISOString(),
-        permission: 'unknown' as const
-      }))
-
-      if (!this.isAwsS3(credentials)) {
-        return buckets
-      }
 
       return Promise.all(
-        buckets.map(async (bucket) => ({
-          ...bucket,
-          region: await this.getBucketRegion(credentials, bucket.name)
-        }))
+        (response.Buckets || []).map(async (b) => {
+          const name = b.Name || ''
+          let region: string | undefined
+          let permission = parseS3BucketGrants(undefined)
+
+          try {
+            if (this.isAwsS3(credentials)) {
+              region = await this.getBucketRegion(credentials, name)
+            }
+            const bucketClient = await this.getClientForBucket(credentials, name, region)
+            const aclResponse = await bucketClient.send(new GetBucketAclCommand({ Bucket: name }))
+            permission = parseS3BucketGrants(aclResponse.Grants)
+          } catch {
+            // Keep unknown when ACL lookup is unavailable.
+          }
+
+          return {
+            name,
+            createdAt: b.CreationDate?.toISOString(),
+            region,
+            permission
+          }
+        })
       )
     } catch (error) {
       throw mapError(error)

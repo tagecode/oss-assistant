@@ -3,6 +3,7 @@ import { createReadStream, createWriteStream } from 'fs'
 import { stat } from 'fs/promises'
 import type { BucketInfo, ListObjectsResult, StorageObject } from '../../shared/types/storage'
 import { type ProviderCredentials, type StorageProvider, calcProgress } from './base-provider'
+import { parseQiniuBucketAccess } from './bucket-access'
 import { mapError } from './provider-errors'
 
 export class QiniuProvider implements StorageProvider {
@@ -42,10 +43,22 @@ export class QiniuProvider implements StorageProvider {
         throw new Error(response.data?.error || '列出存储桶失败')
       }
       const buckets = response.data ?? []
-      return buckets.map((name) => ({
-        name,
-        permission: 'unknown' as const
-      }))
+
+      return Promise.all(
+        buckets.map(async (name) => {
+          let permission = parseQiniuBucketAccess(undefined)
+          try {
+            const info = await bucketManager.getBucketInfo(name)
+            if (info.ok()) {
+              permission = parseQiniuBucketAccess(info.data?.private)
+            }
+          } catch {
+            // Keep unknown when bucket info is unavailable.
+          }
+
+          return { name, permission }
+        })
+      )
     } catch (error) {
       throw mapError(error)
     }

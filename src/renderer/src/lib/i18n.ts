@@ -1,4 +1,9 @@
-import type { Language, LanguageSetting, StorageProvider } from '../../../shared/types/storage'
+import type {
+  BucketInfo,
+  Language,
+  LanguageSetting,
+  StorageProvider
+} from '../../../shared/types/storage'
 
 export function resolveLocale(setting: LanguageSetting): Language {
   if (setting === 'zh') return 'zh'
@@ -84,6 +89,9 @@ const messages = {
     applyToAll: '全部应用此选择',
     startDownload: '开始下载',
     noBuckets: '暂无存储桶',
+    bucketPermissionPublic: '公开',
+    bucketPermissionPrivate: '私有',
+    bucketPermissionUnknown: '未知',
     root: '根目录',
     accountName: '账户名称',
     provider: '服务商',
@@ -246,6 +254,9 @@ const messages = {
     applyToAll: 'Apply to all',
     startDownload: 'Start download',
     noBuckets: 'No buckets',
+    bucketPermissionPublic: 'Public',
+    bucketPermissionPrivate: 'Private',
+    bucketPermissionUnknown: 'Unknown',
     root: 'root',
     accountName: 'Account name',
     provider: 'Provider',
@@ -361,4 +372,18 @@ const PROVIDER_KEYS: Record<StorageProvider, MessageKey> = {
 export function providerLabel(locale: Language, provider: StorageProvider | string): string {
   const key = PROVIDER_KEYS[provider as StorageProvider]
   return key ? t(locale, key) : provider
+}
+
+const BUCKET_PERMISSION_KEYS: Record<NonNullable<BucketInfo['permission']>, MessageKey> = {
+  public: 'bucketPermissionPublic',
+  private: 'bucketPermissionPrivate',
+  unknown: 'bucketPermissionUnknown'
+}
+
+export function bucketPermissionLabel(
+  locale: Language,
+  permission: BucketInfo['permission']
+): string {
+  if (!permission) return t(locale, 'bucketPermissionUnknown')
+  return t(locale, BUCKET_PERMISSION_KEYS[permission])
 }
