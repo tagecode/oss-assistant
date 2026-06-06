@@ -221,17 +221,25 @@ describe('AccountFormDialog', () => {
     expect(screen.queryByLabelText('Endpoint')).not.toBeInTheDocument()
   })
 
-  it('toggles secret key visibility', async () => {
+  it('toggles access key and secret key visibility', async () => {
     const user = userEvent.setup()
     renderDialog()
 
+    const accessKeyInput = screen.getByLabelText(/^Access Key ID/)
     const secretInput = screen.getByLabelText(/^Secret Key/)
+    expect(accessKeyInput).toHaveAttribute('type', 'password')
     expect(secretInput).toHaveAttribute('type', 'password')
 
-    await user.click(screen.getByRole('button', { name: '显示' }))
+    await user.click(screen.getByRole('button', { name: '显示 Access Key ID' }))
+    expect(accessKeyInput).toHaveAttribute('type', 'text')
+
+    await user.click(screen.getByRole('button', { name: '显示 Secret Key' }))
     expect(secretInput).toHaveAttribute('type', 'text')
 
-    await user.click(screen.getByRole('button', { name: '隐藏' }))
+    await user.click(screen.getByRole('button', { name: '隐藏 Access Key ID' }))
+    expect(accessKeyInput).toHaveAttribute('type', 'password')
+
+    await user.click(screen.getByRole('button', { name: '隐藏 Secret Key' }))
     expect(secretInput).toHaveAttribute('type', 'password')
   })
 

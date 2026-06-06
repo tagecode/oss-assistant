@@ -67,6 +67,7 @@ function AccountFormBody({
   const [testing, setTesting] = useState(false)
   const [saving, setSaving] = useState(false)
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
+  const [showAccessKey, setShowAccessKey] = useState(false)
   const [showSecret, setShowSecret] = useState(false)
 
   const accountSchema = useMemo(
@@ -129,6 +130,8 @@ function AccountFormBody({
 
   useEffect(() => {
     if (!open) return
+    setShowAccessKey(false)
+    setShowSecret(false)
     form.reset({
       name: account?.name ?? '',
       provider: account?.provider ?? 'qiniu',
@@ -239,11 +242,23 @@ function AccountFormBody({
             {tr('accessKeyId')}
             <RequiredMark />
           </Label>
-          <Input
-            id="accessKeyId"
-            placeholder={account?.hasAccessKey ? tr('accessKeyPlaceholderEdit') : ''}
-            {...form.register('accessKeyId')}
-          />
+          <div className="flex gap-2">
+            <Input
+              id="accessKeyId"
+              type={showAccessKey ? 'text' : 'password'}
+              placeholder={account?.hasAccessKey ? tr('accessKeyPlaceholderEdit') : ''}
+              {...form.register('accessKeyId')}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              aria-label={showAccessKey ? tr('hideAccessKeyId') : tr('showAccessKeyId')}
+              onClick={() => setShowAccessKey(!showAccessKey)}
+            >
+              {showAccessKey ? tr('hide') : tr('show')}
+            </Button>
+          </div>
           {form.formState.errors.accessKeyId && (
             <p className="text-xs text-destructive">{form.formState.errors.accessKeyId.message}</p>
           )}
@@ -265,6 +280,7 @@ function AccountFormBody({
               type="button"
               variant="outline"
               size="sm"
+              aria-label={showSecret ? tr('hideSecretKey') : tr('showSecretKey')}
               onClick={() => setShowSecret(!showSecret)}
             >
               {showSecret ? tr('hide') : tr('show')}
