@@ -66,7 +66,7 @@ export function TransferTaskRow({
         task.type !== 'delete' &&
         task.progressPercent !== undefined && (
           <div className="flex flex-col gap-1">
-            <Progress value={task.progressPercent} />
+            <Progress value={task.progressPercent} data-testid="task-progress" />
             <p className="text-xs text-muted-foreground">
               {task.progressPercent}% · {formatBytes(task.transferredBytes ?? 0)} /{' '}
               {formatBytes(task.totalBytes ?? 0)}

@@ -1,9 +1,18 @@
 import { copyFileSync, existsSync, mkdirSync, statSync, writeFileSync } from 'fs'
 import { dirname } from 'path'
-import type { BucketInfo, ListObjectsResult, StorageObject } from '../../shared/types/storage'
+import type {
+  BucketInfo,
+  ListObjectsResult,
+  StorageObject,
+  TransferProgress
+} from '../../shared/types/storage'
 import { type ProviderCredentials, type StorageProvider, calcProgress } from './base-provider'
 
 const MOCK_BUCKET = 'e2e-mock-bucket'
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
 
 type StoredObject = {
   size: number
@@ -90,14 +99,22 @@ export class E2eMockProvider implements StorageProvider {
     bucket: string,
     key: string,
     localPath: string,
-    onProgress?: (progress: import('../../shared/types/storage').TransferProgress) => void,
+    onProgress?: (progress: TransferProgress) => void,
     signal?: AbortSignal
   ): Promise<void> {
     if (signal?.aborted) throw new Error('上传已取消')
     const fileStat = statSync(localPath)
     const total = fileStat.size
-    const startTime = Date.now()
-    onProgress?.(calcProgress(total, total, startTime))
+    const steps = 5
+    const stepDelay = Math.max(50, 200 / steps)
+
+    for (let i = 1; i <= steps; i++) {
+      if (signal?.aborted) throw new Error('上传已取消')
+      const transferred = Math.round((i / steps) * total)
+      const startTime = Date.now() - (i / steps) * (stepDelay * steps)
+      onProgress?.(calcProgress(transferred, total, startTime))
+      if (i < steps) await sleep(stepDelay)
+    }
 
     const store = bucketStore(bucket)
     store.set(key, {
@@ -114,7 +131,7 @@ export class E2eMockProvider implements StorageProvider {
     bucket: string,
     key: string,
     localPath: string,
-    onProgress?: (progress: import('../../shared/types/storage').TransferProgress) => void,
+    onProgress?: (progress: TransferProgress) => void,
     signal?: AbortSignal
   ): Promise<void> {
     if (signal?.aborted) throw new Error('下载已取消')
@@ -125,14 +142,26 @@ export class E2eMockProvider implements StorageProvider {
     const dir = dirname(localPath)
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
 
+    const total = obj.size
+    const steps = 5
+    const stepDelay = Math.max(50, 200 / steps)
+
+    for (let i = 1; i <= steps; i++) {
+      if (signal?.aborted) throw new Error('下载已取消')
+      const transferred = Math.round((i / steps) * total)
+      const startTime = Date.now() - (i / steps) * (stepDelay * steps)
+      onProgress?.(calcProgress(transferred, total, startTime))
+      if (i < steps) await sleep(stepDelay)
+    }
+
     if (obj.localCopyPath && existsSync(obj.localCopyPath)) {
       copyFileSync(obj.localCopyPath, localPath)
     } else {
       writeFileSync(localPath, `mock content for ${key}`)
     }
 
-    const startTime = Date.now()
-    onProgress?.(calcProgress(obj.size, obj.size, startTime))
+    const startTime = Date.now() - 200
+    onProgress?.(calcProgress(total, total, startTime))
   }
 
   async deleteObjects(
