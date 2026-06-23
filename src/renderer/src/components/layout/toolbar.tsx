@@ -6,7 +6,7 @@ import { useI18n } from '@/hooks/use-i18n'
 interface ToolbarProps {
   selectedCount: number
   onUpload: () => void
-  onDownload: () => void
+  onDownload: (forceSelect?: boolean) => void
   onDelete: () => void
   onRefresh: () => void
   disabled?: boolean
@@ -31,7 +31,7 @@ export function Toolbar({
       <Button
         size="sm"
         variant="outline"
-        onClick={onDownload}
+        onClick={(e) => onDownload(e.shiftKey)}
         disabled={disabled || selectedCount === 0}
       >
         <Download className="size-4" />

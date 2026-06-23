@@ -103,6 +103,7 @@ export interface AppSettings {
   theme: ThemeMode
   language: LanguageSetting
   defaultDownloadPath: string
+  lastDownloadPath?: string
   transferConcurrency: number
   logRetentionDays: number
   autoCheckUpdate: boolean

@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 
 interface ShortcutHandlers {
   onUpload: () => void
-  onDownload: () => void
+  onDownload: (forceSelect?: boolean) => void
   onDelete: () => void
   onRefresh: () => void
   enabled?: boolean
@@ -28,7 +28,7 @@ export function useKeyboardShortcuts({
       }
       if (mod && e.key.toLowerCase() === 'd') {
         e.preventDefault()
-        onDownload()
+        onDownload(e.shiftKey)
         return
       }
       if (e.key === 'Delete') {

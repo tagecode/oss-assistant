@@ -120,7 +120,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps): Rea
                   variant="outline"
                   size="sm"
                   onClick={async () => {
-                    const dir = await window.api.selectDirectory()
+                    const dir = await window.api.selectDirectory(form.defaultDownloadPath)
                     if (dir) mutation.mutate({ defaultDownloadPath: dir })
                   }}
                 >

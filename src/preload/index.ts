@@ -33,7 +33,7 @@ const api: OssApi = {
   },
   getSettings: () => ipcRenderer.invoke('settings:get'),
   updateSettings: (partial) => ipcRenderer.invoke('settings:update', partial),
-  selectDirectory: () => ipcRenderer.invoke('settings:selectDirectory'),
+  selectDirectory: (defaultPath) => ipcRenderer.invoke('settings:selectDirectory', defaultPath),
   selectFiles: () => ipcRenderer.invoke('settings:selectFiles'),
   getDiagnosticInfo: () => ipcRenderer.invoke('diagnostics:getInfo'),
   exportDiagnostics: () => ipcRenderer.invoke('diagnostics:export'),

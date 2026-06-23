@@ -85,8 +85,11 @@ export function registerIpcHandlers(
     }
     return updated
   })
-  ipcMain.handle('settings:selectDirectory', async () => {
-    const result = await dialog.showOpenDialog({ properties: ['openDirectory'] })
+  ipcMain.handle('settings:selectDirectory', async (_e, defaultPath?: string) => {
+    const result = await dialog.showOpenDialog({
+      defaultPath,
+      properties: ['openDirectory']
+    })
     return result.canceled ? null : result.filePaths[0]
   })
   ipcMain.handle('settings:selectFiles', async () => {

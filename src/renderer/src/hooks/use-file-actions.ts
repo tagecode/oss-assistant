@@ -23,7 +23,7 @@ interface PendingDownload {
 export function useFileActions({ objects, onDeleteRequest }: UseFileActionsOptions): {
   handleUpload: () => Promise<void>
   handleUploadPaths: (paths: string[]) => Promise<void>
-  handleDownload: () => Promise<void>
+  handleDownload: (forceSelect?: boolean) => Promise<void>
   handleDelete: () => void
   handleCopyPath: (key: string) => Promise<void>
   downloadConflicts: DownloadConflictItem[]
@@ -79,48 +79,52 @@ export function useFileActions({ objects, onDeleteRequest }: UseFileActionsOptio
     [uploadFiles]
   )
 
-  const handleDownload = useCallback(async () => {
-    if (!store.selectedAccountId || !store.selectedBucket) return
-    const keys = Array.from(store.selectedKeys).filter((k) => {
-      const obj = objects.find((o) => o.key === k)
-      return obj && !obj.isDirectory
-    })
-    if (keys.length === 0) {
-      toast.error(tr('selectFilesFirst'))
-      return
-    }
-    const settings = await window.api.getSettings()
-    const dir = await window.api.selectDirectory()
-    const localDir = dir ?? settings.defaultDownloadPath
-    if (!localDir) {
-      toast.error(tr('selectFilesFirst'))
-      return
-    }
-
-    const items = await window.api.resolveDownloadPaths(localDir, keys)
-    const exists = await window.api.pathsExist(items.map((item) => item.localPath))
-    const conflicts = items
-      .filter((_, index) => exists[index])
-      .map((item) => ({
-        key: item.key,
-        localPath: item.localPath,
-        fileName: item.key.split('/').pop() ?? item.key
-      }))
-
-    if (conflicts.length > 0) {
-      setPendingDownload({
-        accountId: store.selectedAccountId,
-        bucket: store.selectedBucket,
-        localDir,
-        items
+  const handleDownload = useCallback(
+    async (forceSelect = false) => {
+      if (!store.selectedAccountId || !store.selectedBucket) return
+      const keys = Array.from(store.selectedKeys).filter((k) => {
+        const obj = objects.find((o) => o.key === k)
+        return obj && !obj.isDirectory
       })
-      setDownloadConflicts(conflicts)
-      setDownloadConflictOpen(true)
-      return
-    }
+      if (keys.length === 0) {
+        toast.error(tr('selectFilesFirst'))
+        return
+      }
+      const settings = await window.api.getSettings()
+      let localDir = settings.lastDownloadPath
+      if (!localDir || forceSelect) {
+        const dir = await window.api.selectDirectory(settings.defaultDownloadPath)
+        if (!dir) return
+        localDir = dir
+        await window.api.updateSettings({ lastDownloadPath: dir })
+      }
 
-    await startDownload(store.selectedAccountId, store.selectedBucket, items)
-  }, [store, objects, startDownload, tr])
+      const items = await window.api.resolveDownloadPaths(localDir, keys)
+      const exists = await window.api.pathsExist(items.map((item) => item.localPath))
+      const conflicts = items
+        .filter((_, index) => exists[index])
+        .map((item) => ({
+          key: item.key,
+          localPath: item.localPath,
+          fileName: item.key.split('/').pop() ?? item.key
+        }))
+
+      if (conflicts.length > 0) {
+        setPendingDownload({
+          accountId: store.selectedAccountId,
+          bucket: store.selectedBucket,
+          localDir,
+          items
+        })
+        setDownloadConflicts(conflicts)
+        setDownloadConflictOpen(true)
+        return
+      }
+
+      await startDownload(store.selectedAccountId, store.selectedBucket, items)
+    },
+    [store, objects, startDownload, tr]
+  )
 
   const handleDownloadConflictConfirm = useCallback(
     async (actions: Record<string, DownloadConflictAction>) => {
