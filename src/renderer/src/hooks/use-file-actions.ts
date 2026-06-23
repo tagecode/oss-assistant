@@ -91,9 +91,9 @@ export function useFileActions({ objects, onDeleteRequest }: UseFileActionsOptio
         return
       }
       const settings = await window.api.getSettings()
-      let localDir = settings.lastDownloadPath
-      if (!localDir || forceSelect) {
-        const dir = await window.api.selectDirectory(settings.defaultDownloadPath)
+      let localDir = settings.lastDownloadPath ?? settings.defaultDownloadPath
+      if (forceSelect) {
+        const dir = await window.api.selectDirectory(localDir)
         if (!dir) return
         localDir = dir
         await window.api.updateSettings({ lastDownloadPath: dir })
