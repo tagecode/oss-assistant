@@ -12,6 +12,7 @@
 - **E2E 纳入 CI**：`Verify` 阶段新增 Playwright E2E（lint → typecheck → 单元/组件测试 → 生产构建 → E2E）。CI 与 `Build & Release` 共用同一 composite action，E2E 失败会同时挡住日常 CI 与发版
 - 新增 `scripts/ci-run-e2e.sh` 统一入口：无头 Linux 自动套 `xvfb`，并设置 `E2E_MOCK_CLOUD=1`
 - E2E 失败时上传 `e2e-report` artifact（trace + HTML 报告），保留 7 天
+- **凭据存储降级开关（Linux）**：系统没有可用密钥环时，设置页会给出提示，并允许用户显式选择「改用内存密钥保存」，以便在精简桌面环境下仍能添加账户。默认关闭，应用不会自行降级加密强度
 
 ### Changed
 
@@ -19,7 +20,7 @@
 
 ### Fixed
 
-- E2E 在无头 Linux 上无法保存账户：runner 没有系统 keyring，`safeStorage.isEncryptionAvailable()` 为 false 导致凭证加密抛错。新增 `E2E_PLAIN_TEXT_ENCRYPTION=1` 让主进程改用内存密钥，仅测试进程显式启用，应用本身不静默降级加密强度
+- E2E 在无头 Linux 上无法保存账户：runner 没有系统 keyring，`safeStorage.isEncryptionAvailable()` 为 false 导致凭证加密抛错。E2E 现在把 `allowInsecureCredentialStorage` 预置进 userData，与用户在设置页勾选走同一条代码路径（主进程无测试专用分支）
 
 ## [1.0.1] - 2026-09-16
 

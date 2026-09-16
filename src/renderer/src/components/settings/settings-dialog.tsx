@@ -27,6 +27,12 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps): Rea
     enabled: open
   })
 
+  const { data: credentialStatus } = useQuery({
+    queryKey: ['credentialStorageStatus'],
+    queryFn: () => window.api.getCredentialStorageStatus(),
+    enabled: open
+  })
+
   const mutation = useMutation({
     mutationFn: (partial: Partial<AppSettings>) => window.api.updateSettings(partial),
     onSuccess: (data) => {
@@ -158,6 +164,43 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps): Rea
           </section>
 
           <Separator />
+
+          {credentialStatus && (
+            <>
+              <section className="flex flex-col gap-3">
+                <h3 className="text-sm font-semibold">{tr('credentialStorage')}</h3>
+                {credentialStatus.encryptionAvailable ? (
+                  <p className="text-xs text-muted-foreground">{tr('credentialStorageSecured')}</p>
+                ) : (
+                  <>
+                    <p className="text-xs text-destructive" data-testid="credential-warning">
+                      {tr('credentialStorageUnavailable')}
+                    </p>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex flex-col gap-1">
+                        <p className="text-sm font-medium">
+                          {tr('allowInsecureCredentialStorage')}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {tr('allowInsecureCredentialStorageHint')}
+                        </p>
+                      </div>
+                      <Switch
+                        className="shrink-0"
+                        data-testid="settings-allow-insecure-credentials"
+                        checked={form.allowInsecureCredentialStorage}
+                        onCheckedChange={(checked) =>
+                          mutation.mutate({ allowInsecureCredentialStorage: checked })
+                        }
+                      />
+                    </div>
+                  </>
+                )}
+              </section>
+
+              <Separator />
+            </>
+          )}
 
           <section className="flex items-center justify-between">
             <div>

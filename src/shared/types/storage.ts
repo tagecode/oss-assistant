@@ -107,6 +107,21 @@ export interface AppSettings {
   transferConcurrency: number
   logRetentionDays: number
   autoCheckUpdate: boolean
+  /**
+   * 缺少系统密钥环时，是否允许改用内存密钥保存凭证（仅 Linux 有意义）。
+   *
+   * 默认关闭：宁可让用户看到「系统加密能力不可用」的明确报错，也不静默把凭证
+   * 降级成只剩混淆强度的保护。只有在设置页知情勾选后才会打开。
+   */
+  allowInsecureCredentialStorage: boolean
+}
+
+/** 凭据加密能力现状，供设置页决定是否展示降级开关。 */
+export interface CredentialStorageStatus {
+  /** 系统是否提供了可用的加密能力。Linux 上取决于是否存在 keyring。 */
+  encryptionAvailable: boolean
+  /** 用户是否已允许在缺少 keyring 时降级为内存密钥。 */
+  fallbackEnabled: boolean
 }
 
 export interface DiagnosticInfo {

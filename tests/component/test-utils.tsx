@@ -8,7 +8,8 @@ const defaultSettings = {
   defaultDownloadPath: '/tmp/downloads',
   transferConcurrency: 3,
   logRetentionDays: 30,
-  autoCheckUpdate: true
+  autoCheckUpdate: true,
+  allowInsecureCredentialStorage: false
 }
 
 const testQueryClient = new QueryClient({

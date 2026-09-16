@@ -15,9 +15,12 @@ let servicesInitialized = false
 
 function initServices(): void {
   if (servicesInitialized) return
-  const credentialService = new CredentialService()
-  const accountService = new AccountService(credentialService)
+  // 顺序有讲究：加密降级开关存在设置里，必须在 CredentialService 真正用到
+  // safeStorage 之前应用，否则启动后第一次保存账户仍会失败。
   const settingsService = new SettingsService()
+  const credentialService = new CredentialService()
+  credentialService.setFallbackEnabled(settingsService.get().allowInsecureCredentialStorage)
+  const accountService = new AccountService(credentialService)
   const diagnosticService = new DiagnosticService()
   const mockProvider = isE2eMockMode() ? new E2eMockProvider() : null
   const mockProviders = mockProvider
@@ -37,6 +40,7 @@ function initServices(): void {
 
   registerIpcHandlers(
     accountService,
+    credentialService,
     settingsService,
     storageService,
     transferService,

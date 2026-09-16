@@ -33,6 +33,7 @@ const api: OssApi = {
   },
   getSettings: () => ipcRenderer.invoke('settings:get'),
   updateSettings: (partial) => ipcRenderer.invoke('settings:update', partial),
+  getCredentialStorageStatus: () => ipcRenderer.invoke('credentials:getStorageStatus'),
   selectDirectory: (defaultPath) => ipcRenderer.invoke('settings:selectDirectory', defaultPath),
   selectFiles: () => ipcRenderer.invoke('settings:selectFiles'),
   getDiagnosticInfo: () => ipcRenderer.invoke('diagnostics:getInfo'),

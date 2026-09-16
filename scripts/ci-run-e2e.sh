@@ -9,8 +9,9 @@ set -euo pipefail
 #   本地已有图形会话时（DISPLAY 已设置）直接跑，不套 xvfb。
 # - E2E_MOCK_CLOUD=1 让 cloud-workflow / transfer-progress 走内存 Mock Provider，
 #   无需真实云凭证；其余用例本来就不需要凭证。
-# - E2E_PLAIN_TEXT_ENCRYPTION=1 让主进程用内存密钥代替系统 keyring。runner 上没有
-#   keyring，safeStorage 不可用，保存账户会直接抛错、表单提交不了。仅测试进程受影响。
+# - runner 上没有系统 keyring，safeStorage 不可用，保存账户会抛错。测试自己会把
+#   allowInsecureCredentialStorage 预置进 userData（见 tests/e2e/helpers/launch.ts），
+#   不需要这里额外设环境变量。
 
 if [[ ! -f out/main/index.js ]]; then
   echo "out/main/index.js 不存在，请先执行 pnpm build" >&2
@@ -18,7 +19,6 @@ if [[ ! -f out/main/index.js ]]; then
 fi
 
 export E2E_MOCK_CLOUD=1
-export E2E_PLAIN_TEXT_ENCRYPTION=1
 
 if [[ "$(uname -s)" == "Linux" && -z "${DISPLAY:-}" ]]; then
   exec xvfb-run --auto-servernum --server-args="-screen 0 1280x1024x24" \

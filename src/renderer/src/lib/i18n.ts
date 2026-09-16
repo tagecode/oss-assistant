@@ -71,6 +71,12 @@ const messages = {
     transferConcurrency: '上传/下载并发数',
     logRetention: '操作日志保留天数',
     autoCheckUpdate: '启动后自动检查更新',
+    credentialStorage: '凭据存储',
+    credentialStorageSecured: '账户凭证由系统密钥环加密保存。',
+    credentialStorageUnavailable: '当前系统没有可用的密钥环，无法安全保存账户凭证。',
+    allowInsecureCredentialStorage: '改用内存密钥保存（不推荐）',
+    allowInsecureCredentialStorageHint:
+      '内存密钥不受系统密钥环保护，任何能读取本机用户目录的程序都可以还原凭证。仅在无法安装密钥环时使用；关闭该选项后，用该密钥保存的账户将无法读取。',
     platform: '平台',
     selectFilesFirst: '请选择要下载的文件',
     selectObjectsFirst: '请选择要删除的对象',
@@ -242,6 +248,13 @@ const messages = {
     transferConcurrency: 'Upload/download concurrency',
     logRetention: 'Log retention (days)',
     autoCheckUpdate: 'Check for updates on startup',
+    credentialStorage: 'Credential storage',
+    credentialStorageSecured: 'Account credentials are encrypted with the system keyring.',
+    credentialStorageUnavailable:
+      'No system keyring is available, so account credentials cannot be stored securely.',
+    allowInsecureCredentialStorage: 'Use an in-memory key instead (not recommended)',
+    allowInsecureCredentialStorageHint:
+      'An in-memory key is not protected by the system keyring — any program that can read your user data directory can recover the credentials. Use it only when a keyring cannot be installed. Turning it off makes accounts saved with that key unreadable.',
     platform: 'Platform',
     selectFilesFirst: 'Select files to download',
     selectObjectsFirst: 'Select objects to delete',

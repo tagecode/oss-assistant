@@ -22,6 +22,7 @@ export const ALLOWED_IPC_CHANNELS = [
   'settings:update',
   'settings:selectDirectory',
   'settings:selectFiles',
+  'credentials:getStorageStatus',
   'fs:pathsExist',
   'fs:resolveDownloadPaths',
   'fs:uniqueDownloadPath',

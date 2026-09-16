@@ -18,7 +18,8 @@ vi.mock('electron', () => ({
   safeStorage: {
     isEncryptionAvailable: vi.fn(() => true),
     encryptString: vi.fn((value: string) => Buffer.from(value, 'utf-8')),
-    decryptString: vi.fn((buffer: Buffer) => buffer.toString('utf-8'))
+    decryptString: vi.fn((buffer: Buffer) => buffer.toString('utf-8')),
+    setUsePlainTextEncryption: vi.fn()
   },
   BrowserWindow: {
     getAllWindows: vi.fn(() => [])

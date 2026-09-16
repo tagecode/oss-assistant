@@ -13,6 +13,16 @@ export async function launchApp(options?: {
     path.join(os.tmpdir(), `oss-e2e-${Date.now()}-${Math.random().toString(36).slice(2)}`)
   if (!options?.userDataDir) {
     fs.mkdirSync(userDataDir, { recursive: true })
+    // 无头 Linux runner 没有系统 keyring，safeStorage 不可用，保存账户时凭证加密
+    // 直接抛错，账户表单永远提交不了。这里走真实路径：把设置预置进 userData，
+    // 主进程启动时读到它就会降级为内存密钥，与用户在设置页勾选完全同一条代码路径。
+    // 有 keyring 的环境下这个开关是空操作，不会掩盖真实的加密行为。
+    // 复用同一 userDataDir 重启的用例不预置，以免覆盖上一次运行持久化的设置。
+    fs.writeFileSync(
+      path.join(userDataDir, 'settings.json'),
+      JSON.stringify({ allowInsecureCredentialStorage: true }),
+      'utf-8'
+    )
   }
 
   const mainArgs = [
@@ -20,12 +30,9 @@ export async function launchApp(options?: {
     `--user-data-dir=${userDataDir}`
   ]
   if (options?.mockCloud) mainArgs.push('--e2e-mock-cloud')
-  // 无头 Linux（CI runner）没有系统 keyring，safeStorage.isEncryptionAvailable() 为 false，
-  // 保存账户时凭证加密直接抛错，表单永远提交不了。这个参数让主进程改用内存密钥。
-  // 由 ci-run-e2e.sh 显式开启：本地有桌面会话时仍走真实的系统加密路径。
-  // 注意别指望 `--password-store=basic`——Playwright 自己就会加这个开关（见其
-  // electron loader），而 basic 后端恰恰是 isEncryptionAvailable() 返回 false 的原因。
-  if (process.env.E2E_PLAIN_TEXT_ENCRYPTION === '1') mainArgs.push('--e2e-plain-text-encryption')
+  // 注意：不要试图用 `--password-store=basic` 解决凭证加密问题。Playwright 自己就会
+  // appendSwitch 这个开关（见 playwright-core 的 electron loader），而 basic 后端恰恰是
+  // isEncryptionAvailable() 返回 false 的原因。降级只能通过上面的设置项触发。
 
   const app = await electron.launch({
     args: mainArgs,

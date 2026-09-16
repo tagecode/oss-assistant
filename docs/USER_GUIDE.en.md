@@ -94,6 +94,19 @@ Open **Settings** from the icon in the top-right corner to configure:
 - Operation log retention (days)
 - Auto-check for updates
 
+### Credential storage (Linux)
+
+Account credentials are encrypted with the system keyring by default. If the system has no
+usable keyring (for example a minimal desktop without `gnome-keyring` / `kwallet`), the app
+cannot store credentials securely and Settings will say so.
+
+You can then choose **Use an in-memory key instead** to keep working, but note:
+
+- An in-memory key is **not protected by the system keyring** — any program that can read
+  your user data directory can recover the credentials
+- Turning the option off makes accounts saved with that key unreadable (delete and re-add them)
+- Installing and unlocking a system keyring is the better fix
+
 ## Help & diagnostics
 
 Open **Help** from the icon in the top-right corner to:

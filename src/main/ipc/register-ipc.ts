@@ -1,6 +1,7 @@
 import { ipcMain, dialog, app } from 'electron'
 import { isAllowedChannel } from '../security'
 import { AccountService } from '../services/account-service'
+import { CredentialService } from '../services/credential-service'
 import { SettingsService } from '../services/settings-service'
 import { StorageService } from '../services/storage-service'
 import { TransferService } from '../services/transfer-service'
@@ -12,6 +13,7 @@ import { pathsExist, resolveDownloadPath, uniqueDownloadPath } from '../services
 
 export function registerIpcHandlers(
   accountService: AccountService,
+  credentialService: CredentialService,
   settingsService: SettingsService,
   storageService: StorageService,
   transferService: TransferService,
@@ -83,8 +85,12 @@ export function registerIpcHandlers(
     if (partial.autoCheckUpdate !== undefined) {
       updateService.onSettingsChanged()
     }
+    if (partial.allowInsecureCredentialStorage !== undefined) {
+      credentialService.setFallbackEnabled(updated.allowInsecureCredentialStorage)
+    }
     return updated
   })
+  ipcMain.handle('credentials:getStorageStatus', () => credentialService.getStorageStatus())
   ipcMain.handle('settings:selectDirectory', async (_e, defaultPath?: string) => {
     const result = await dialog.showOpenDialog({
       defaultPath,

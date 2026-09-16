@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto'
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
+import type { CredentialStorageStatus } from '../../shared/types/storage'
 
 interface CredentialStore {
   [ref: string]: string
@@ -11,19 +12,45 @@ interface CredentialStore {
 export class CredentialService {
   private storePath: string
   private store: CredentialStore = {}
+  private fallbackEnabled = false
+  /**
+   * 构造时（即任何降级生效前）记录的系统加密能力。
+   *
+   * 不能改成实时查询：一旦启用了降级，`isEncryptionAvailable()` 会因为内存密钥已就位
+   * 而返回 true，设置页就会误以为密钥环可用，进而藏起开关并显示「由系统密钥环保护」
+   * 这种与事实相反的结论。
+   */
+  private readonly systemEncryptionAvailable: boolean
 
   constructor() {
-    // 无头 Linux（CI runner）没有系统 keyring，Chromium 会退到 basic_text 后端，
-    // isEncryptionAvailable() 为 false，保存账户必然抛错。Electron 为此提供了
-    // 「用内存密钥代替系统密码管理器」的降级开关，但它会让凭证只剩混淆级别的保护，
-    // 所以只在 E2E 显式传参时启用：生产环境宁可报错，也不静默降低安全强度。
-    if (process.argv.includes('--e2e-plain-text-encryption')) {
-      safeStorage.setUsePlainTextEncryption(true)
-    }
+    this.systemEncryptionAvailable = safeStorage.isEncryptionAvailable()
     const dir = join(app.getPath('userData'), 'credentials')
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
     this.storePath = join(dir, 'vault.json')
     this.load()
+  }
+
+  /**
+   * 设置「缺少系统密钥环时是否降级为内存密钥」。设置页改动后随时可再次调用。
+   *
+   * 只有确实没有可用的系统加密能力时才降级：如果系统本来就能加密，绝不能因为用户
+   * 勾了这个选项反而把可用的密钥环换成内存密钥，那等于主动削弱保护。
+   * `setUsePlainTextEncryption` 在 Windows / macOS 上是空操作，无需再加平台分支。
+   */
+  setFallbackEnabled(enabled: boolean): void {
+    this.fallbackEnabled = enabled
+    if (enabled && !this.systemEncryptionAvailable) {
+      safeStorage.setUsePlainTextEncryption(true)
+    }
+    // 关闭时不回退：本次运行内可能已用内存密钥写入过凭证，当场换回系统密钥会让它们
+    // 立刻解不开。下次启动按持久化的设置决定，届时不再降级。
+  }
+
+  getStorageStatus(): CredentialStorageStatus {
+    return {
+      encryptionAvailable: this.systemEncryptionAvailable,
+      fallbackEnabled: this.fallbackEnabled
+    }
   }
 
   private load(): void {

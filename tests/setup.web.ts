@@ -19,7 +19,8 @@ const defaultSettings = {
   defaultDownloadPath: '/tmp/downloads',
   transferConcurrency: 3,
   logRetentionDays: 30,
-  autoCheckUpdate: true
+  autoCheckUpdate: true,
+  allowInsecureCredentialStorage: false
 }
 
 Object.defineProperty(window, 'api', {
@@ -29,6 +30,9 @@ Object.defineProperty(window, 'api', {
     updateSettings: vi.fn().mockResolvedValue(defaultSettings),
     getVersion: vi.fn().mockResolvedValue('1.0.0'),
     getPlatform: vi.fn().mockResolvedValue('win32'),
+    getCredentialStorageStatus: vi
+      .fn()
+      .mockResolvedValue({ encryptionAvailable: true, fallbackEnabled: false }),
     pathsExist: vi.fn().mockResolvedValue([]),
     resolveDownloadPaths: vi.fn().mockResolvedValue([]),
     uniqueDownloadPath: vi.fn().mockResolvedValue('/tmp/downloads/file (1).txt'),

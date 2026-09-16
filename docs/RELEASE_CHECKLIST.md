@@ -12,6 +12,7 @@
 
 - [ ] 本地 `accounts.json` 不含明文 Secret
 - [ ] 凭证文件 `credentials/vault.json` 为加密内容
+- [ ] 无密钥环的 Linux 上默认**无法**保存账户并给出提示，「改用内存密钥保存」仅在用户显式勾选后生效
 - [ ] 导出诊断包不含明文 Secret
 - [ ] 渲染进程无法访问 Node.js API（`contextIsolation` 开启）
 

@@ -10,7 +10,8 @@ function getDefaultSettings(): AppSettings {
     defaultDownloadPath: app.getPath('downloads'),
     transferConcurrency: 3,
     logRetentionDays: 30,
-    autoCheckUpdate: true
+    autoCheckUpdate: true,
+    allowInsecureCredentialStorage: false
   }
 }
 

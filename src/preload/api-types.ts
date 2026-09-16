@@ -3,6 +3,7 @@ import type {
   AccountPublic,
   AppSettings,
   BucketInfo,
+  CredentialStorageStatus,
   DiagnosticInfo,
   ListObjectsResult,
   TransferTask
@@ -52,6 +53,7 @@ export interface OssApi {
   onTransferUpdate: (callback: (tasks: TransferTask[]) => void) => () => void
   getSettings: () => Promise<AppSettings>
   updateSettings: (partial: Partial<AppSettings>) => Promise<AppSettings>
+  getCredentialStorageStatus: () => Promise<CredentialStorageStatus>
   selectDirectory: (defaultPath?: string) => Promise<string | null>
   selectFiles: () => Promise<string[]>
   getDiagnosticInfo: () => Promise<DiagnosticInfo>

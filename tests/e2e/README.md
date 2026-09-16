@@ -21,17 +21,19 @@ pnpm test:e2e
 E2E_MOCK_CLOUD=1 pnpm test:e2e
 ```
 
-无头 Linux 下用统一入口，脚本会自动套 `xvfb`，并设置 `E2E_MOCK_CLOUD=1` 与
-`E2E_PLAIN_TEXT_ENCRYPTION=1`：
+无头 Linux 下用统一入口，脚本会自动套 `xvfb` 并设置 `E2E_MOCK_CLOUD=1`：
 
 ```bash
 bash scripts/ci-run-e2e.sh
 ```
 
-> **关于 `E2E_PLAIN_TEXT_ENCRYPTION`**：CI runner 没有系统 keyring，`safeStorage`
-> 不可用，保存账户时凭证加密直接抛错，账户表单永远提交不了。该变量会让主进程用内存
-> 密钥代替系统密码管理器（Electron 的 `setUsePlainTextEncryption`）。它只在测试进程
-> 生效，且必须显式开启——应用本身不会静默降级加密强度。
+> **关于凭证加密**：CI runner 没有系统 keyring，`safeStorage` 不可用，保存账户时
+> 凭证加密会直接抛错、账户表单永远提交不了。`launchApp` 会把
+> `allowInsecureCredentialStorage` 预置进新建的 userData 目录，主进程启动时读到它
+> 就降级为内存密钥。这与用户在设置页勾选「改用内存密钥保存」走的是同一条代码路径，
+> 主进程里没有测试专用分支；有 keyring 的环境下该开关是空操作。
+>
+> 复用同一 `userDataDir` 重启的用例不预置，以免覆盖上一次运行持久化的设置。
 
 ## 测试范围
 

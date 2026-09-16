@@ -10,7 +10,8 @@ const defaultSettings = {
   defaultDownloadPath: '/tmp/downloads',
   transferConcurrency: 3,
   logRetentionDays: 30,
-  autoCheckUpdate: true
+  autoCheckUpdate: true,
+  allowInsecureCredentialStorage: false
 }
 
 describe('SettingsDialog', () => {
@@ -23,6 +24,9 @@ describe('SettingsDialog', () => {
     }))
     window.api.getVersion = vi.fn().mockResolvedValue('1.0.0')
     window.api.getPlatform = vi.fn().mockResolvedValue('win32')
+    window.api.getCredentialStorageStatus = vi
+      .fn()
+      .mockResolvedValue({ encryptionAvailable: true, fallbackEnabled: false })
   })
 
   it('renders settings sections and version info', async () => {
@@ -47,6 +51,33 @@ describe('SettingsDialog', () => {
     await waitFor(() => {
       expect(window.api.updateSettings).toHaveBeenCalledWith(
         expect.objectContaining({ logRetentionDays: 7 })
+      )
+    })
+  })
+
+  it('hides the fallback switch when the system keyring is available', async () => {
+    renderWithProviders(<SettingsDialog open onOpenChange={vi.fn()} />)
+
+    expect(await screen.findByText('账户凭证由系统密钥环加密保存。')).toBeInTheDocument()
+    expect(screen.queryByTestId('settings-allow-insecure-credentials')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('credential-warning')).not.toBeInTheDocument()
+  })
+
+  it('offers the fallback switch only when no keyring is available', async () => {
+    window.api.getCredentialStorageStatus = vi
+      .fn()
+      .mockResolvedValue({ encryptionAvailable: false, fallbackEnabled: false })
+
+    const user = userEvent.setup()
+    renderWithProviders(<SettingsDialog open onOpenChange={vi.fn()} />)
+
+    expect(await screen.findByTestId('credential-warning')).toBeInTheDocument()
+    const toggle = screen.getByTestId('settings-allow-insecure-credentials')
+    await user.click(toggle)
+
+    await waitFor(() => {
+      expect(window.api.updateSettings).toHaveBeenCalledWith(
+        expect.objectContaining({ allowInsecureCredentialStorage: true })
       )
     })
   })
