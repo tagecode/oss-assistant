@@ -17,6 +17,10 @@
 
 - `playwright.config.ts` 在 CI 上启用 `retries: 1`，使 `trace: 'on-first-retry'` 真正生效（此前 `retries: 0`，失败时永远不会录制 trace）
 
+### Fixed
+
+- E2E 在无头 Linux 上无法保存账户：runner 没有系统 keyring，`safeStorage.isEncryptionAvailable()` 为 false 导致凭证加密抛错。新增 `E2E_PLAIN_TEXT_ENCRYPTION=1` 让主进程改用内存密钥，仅测试进程显式启用，应用本身不静默降级加密强度
+
 ## [1.0.1] - 2026-09-16
 
 ### Added

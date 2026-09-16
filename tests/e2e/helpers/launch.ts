@@ -20,11 +20,12 @@ export async function launchApp(options?: {
     `--user-data-dir=${userDataDir}`
   ]
   if (options?.mockCloud) mainArgs.push('--e2e-mock-cloud')
-  // 无头 Linux（CI runner）没有系统 keyring，Electron 的
-  // safeStorage.isEncryptionAvailable() 会返回 false，保存账户时凭证加密直接抛错，
-  // 表单永远提交不了。basic password store 让 Chromium 改用内置密钥后端，
-  // 流程才跑得下去。只影响测试进程——生产构建不传这个参数。
-  if (process.platform === 'linux') mainArgs.push('--password-store=basic')
+  // 无头 Linux（CI runner）没有系统 keyring，safeStorage.isEncryptionAvailable() 为 false，
+  // 保存账户时凭证加密直接抛错，表单永远提交不了。这个参数让主进程改用内存密钥。
+  // 由 ci-run-e2e.sh 显式开启：本地有桌面会话时仍走真实的系统加密路径。
+  // 注意别指望 `--password-store=basic`——Playwright 自己就会加这个开关（见其
+  // electron loader），而 basic 后端恰恰是 isEncryptionAvailable() 返回 false 的原因。
+  if (process.env.E2E_PLAIN_TEXT_ENCRYPTION === '1') mainArgs.push('--e2e-plain-text-encryption')
 
   const app = await electron.launch({
     args: mainArgs,
