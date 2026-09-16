@@ -7,6 +7,16 @@
 
 ## [Unreleased]
 
+### Added
+
+- **E2E 纳入 CI**：`Verify` 阶段新增 Playwright E2E（lint → typecheck → 单元/组件测试 → 生产构建 → E2E）。CI 与 `Build & Release` 共用同一 composite action，E2E 失败会同时挡住日常 CI 与发版
+- 新增 `scripts/ci-run-e2e.sh` 统一入口：无头 Linux 自动套 `xvfb`，并设置 `E2E_MOCK_CLOUD=1`
+- E2E 失败时上传 `e2e-report` artifact（trace + HTML 报告），保留 7 天
+
+### Changed
+
+- `playwright.config.ts` 在 CI 上启用 `retries: 1`，使 `trace: 'on-first-retry'` 真正生效（此前 `retries: 0`，失败时永远不会录制 trace）
+
 ## [1.0.1] - 2026-09-16
 
 ### Added

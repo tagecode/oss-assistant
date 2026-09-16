@@ -1,5 +1,5 @@
 name: Verify
-description: Lint, typecheck, unit/component tests, and production build
+description: Lint, typecheck, unit/component tests, production build, and E2E tests
 
 runs:
   using: composite
@@ -19,3 +19,31 @@ runs:
     - name: Production build
       shell: bash
       run: pnpm build
+
+    # Electron 在 Linux 上需要一组系统库；用 Playwright 自带的依赖列表，
+    # 避免手写一份容易和 runner 镜像漂移的包名清单。
+    - name: Install Playwright system dependencies
+      if: runner.os == 'Linux'
+      shell: bash
+      run: pnpm exec playwright install-deps chromium
+
+    # install-deps 不保证带上 xvfb，显式装一次（已安装时 apt 直接成功返回）。
+    - name: Install xvfb
+      if: runner.os == 'Linux'
+      shell: bash
+      run: sudo apt-get install -y xvfb
+
+    - name: E2E tests
+      shell: bash
+      run: bash scripts/ci-run-e2e.sh
+
+    - name: Upload E2E report
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: e2e-report
+        path: |
+          test-results/
+          playwright-report/
+        if-no-files-found: ignore
+        retention-days: 7

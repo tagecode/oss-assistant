@@ -58,15 +58,19 @@ pnpm build:linux
 - [ ] AppImage 可执行
 - [ ] deb 包可安装（如生成）
 
-## E2E 测试（本地 / 发版前手动，CI 不跑）
+## E2E 测试（CI 已自动运行）
+
+`Verify` 阶段会执行完整 E2E，发版前无需手动跑。以下命令用于本地复现：
 
 ```bash
 pnpm build
-pnpm exec playwright install --with-deps
+pnpm exec playwright install-deps chromium
 E2E_MOCK_CLOUD=1 pnpm test:e2e
+# 无头 Linux：bash scripts/ci-run-e2e.sh
 ```
 
-- [ ] `app-launch.spec.ts` 通过
+- [ ] CI 的 E2E 步骤通过（5 个 spec）
+- [ ] 若 E2E 失败，下载构建产物中的 `e2e-report`（含 trace 与 HTML 报告）定位问题
 
 ## GitHub Actions
 

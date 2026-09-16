@@ -20,21 +20,21 @@ A cross-platform desktop app for object storage management. Manage accounts, buc
 
 ## Supported platforms
 
-| Platform      | Package format              |
-| ------------- | --------------------------- |
-| Windows 10/11 | `.exe` (NSIS installer)     |
-| macOS 12+     | `.dmg`                      |
-| Linux         | `.AppImage`, `.deb`         |
+| Platform      | Package format          |
+| ------------- | ----------------------- |
+| Windows 10/11 | `.exe` (NSIS installer) |
+| macOS 12+     | `.dmg`                  |
+| Linux         | `.AppImage`, `.deb`     |
 
 ## Download
 
 Get installers for your platform from [Releases](https://github.com/tagecode/oss-assistant/releases).
 
-| Platform | Example filename                              |
-| -------- | --------------------------------------------- |
-| Windows  | `oss-assistant-v1.0.0-win-x64-setup.exe`        |
-| macOS    | `oss-assistant-v1.0.0-mac-arm64.dmg`            |
-| Linux    | `oss-assistant-v1.0.0-linux-x64.AppImage`       |
+| Platform | Example filename                          |
+| -------- | ----------------------------------------- |
+| Windows  | `oss-assistant-v1.0.0-win-x64-setup.exe`  |
+| macOS    | `oss-assistant-v1.0.0-mac-arm64.dmg`      |
+| Linux    | `oss-assistant-v1.0.0-linux-x64.AppImage` |
 
 For detailed usage, see the [User Guide](docs/USER_GUIDE.en.md).
 
@@ -99,16 +99,17 @@ pnpm test:unit         # Main-process unit tests only
 pnpm test:component    # Renderer component tests only
 ```
 
-**CI pipeline**: typecheck → unit/component tests → production build (E2E not included).
+**CI pipeline**: lint → typecheck → unit/component tests → production build → E2E. CI and `Build & Release` share `.github/actions/verify`, so an E2E failure blocks both day-to-day CI and releases.
 
-**E2E (local / before release, manual)**:
+**E2E (local)**:
 
 ```bash
 pnpm build
-pnpm exec playwright install --with-deps
+pnpm exec playwright install-deps chromium
 E2E_MOCK_CLOUD=1 pnpm test:e2e
 ```
 
+On a headless Linux box just run `bash scripts/ci-run-e2e.sh` — it wraps the run in `xvfb`.
 See [tests/e2e/README.md](tests/e2e/README.md) for details.
 
 ## Project layout

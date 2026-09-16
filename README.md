@@ -20,21 +20,21 @@
 
 ## 支持的平台
 
-| 平台 | 安装包格式 |
-| ---- | ---------- |
+| 平台          | 安装包格式              |
+| ------------- | ----------------------- |
 | Windows 10/11 | `.exe`（NSIS 安装程序） |
-| macOS 12+ | `.dmg` |
-| Linux | `.AppImage`、`.deb` |
+| macOS 12+     | `.dmg`                  |
+| Linux         | `.AppImage`、`.deb`     |
 
 ## 下载
 
 在 [Releases](https://github.com/tagecode/oss-assistant/releases) 页面下载对应平台的安装包。
 
-| 平台 | 文件名示例 |
-| ---- | ---------- |
-| Windows | `oss-assistant-v1.0.0-win-x64-setup.exe` |
-| macOS | `oss-assistant-v1.0.0-mac-arm64.dmg` |
-| Linux | `oss-assistant-v1.0.0-linux-x64.AppImage` |
+| 平台    | 文件名示例                                |
+| ------- | ----------------------------------------- |
+| Windows | `oss-assistant-v1.0.0-win-x64-setup.exe`  |
+| macOS   | `oss-assistant-v1.0.0-mac-arm64.dmg`      |
+| Linux   | `oss-assistant-v1.0.0-linux-x64.AppImage` |
 
 详细使用说明见 [用户指南](docs/USER_GUIDE.md)（[English](docs/USER_GUIDE.en.md)）。
 
@@ -99,16 +99,17 @@ pnpm test:unit         # 仅主进程单元测试
 pnpm test:component    # 仅渲染进程组件测试
 ```
 
-**CI 流水线**：typecheck → 单元/组件测试 → 生产构建（不含 E2E）。
+**CI 流水线**：lint → typecheck → 单元/组件测试 → 生产构建 → E2E。CI 与 `Build & Release` 共用 `.github/actions/verify`，因此 E2E 失败会同时挡住日常 CI 和发版。
 
-**E2E（本地 / 发版前手动）**：
+**E2E（本地）**：
 
 ```bash
 pnpm build
-pnpm exec playwright install --with-deps
+pnpm exec playwright install-deps chromium
 E2E_MOCK_CLOUD=1 pnpm test:e2e
 ```
 
+无头 Linux 环境直接用 `bash scripts/ci-run-e2e.sh` 即可（自动套 `xvfb`）。
 说明见 [tests/e2e/README.md](tests/e2e/README.md)。
 
 ## 项目结构
