@@ -20,6 +20,11 @@ export async function launchApp(options?: {
     `--user-data-dir=${userDataDir}`
   ]
   if (options?.mockCloud) mainArgs.push('--e2e-mock-cloud')
+  // 无头 Linux（CI runner）没有系统 keyring，Electron 的
+  // safeStorage.isEncryptionAvailable() 会返回 false，保存账户时凭证加密直接抛错，
+  // 表单永远提交不了。basic password store 让 Chromium 改用内置密钥后端，
+  // 流程才跑得下去。只影响测试进程——生产构建不传这个参数。
+  if (process.platform === 'linux') mainArgs.push('--password-store=basic')
 
   const app = await electron.launch({
     args: mainArgs,
