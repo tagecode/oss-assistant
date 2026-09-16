@@ -7,6 +7,28 @@
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-09-16
+
+### Added
+
+- **下载目录选择**：工具栏「下载」按钮与 `Ctrl/Cmd + D` 支持按住 `Shift` 强制打开目录选择器，重新指定本次下载的保存目录
+- **英文文档**：新增 `README.en.md` 与 `docs/USER_GUIDE.en.md`，中英文文档互相跳转
+- **E2E**：mock provider 支持模拟分片传输进度，新增传输进度用例 `tests/e2e/transfer-progress.spec.ts`
+
+### Changed
+
+- 下载不再每次弹出目录选择器：优先复用上次下载目录，其次使用设置中的「默认下载路径」
+- `selectDirectory` API 新增 `defaultPath` 参数，目录选择器打开时定位到当前或默认下载目录
+- 设置中「默认下载路径」选择目录时以当前值为起点
+
+### Fixed
+
+- 加固下载目录解析：默认下载路径被清空且从未下载过时，改为弹出目录选择器，不再退化为相对路径写入进程工作目录
+
+### Removed
+
+- 移除未使用的 `file-table.tsx` 组件（已由虚拟滚动表格 `virtual-file-table.tsx` 取代）
+
 ## [1.0.0] - 2026-06-06
 
 首个正式版本，交付跨平台桌面对象存储管理 MVP。
@@ -31,5 +53,6 @@
 - Access Key 与 Secret 不以明文写入本地持久化文件
 - 诊断日志与错误提示经过脱敏处理，不包含明文密钥
 
-[Unreleased]: https://github.com/tagecode/oss-assistant/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/tagecode/oss-assistant/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/tagecode/oss-assistant/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/tagecode/oss-assistant/releases/tag/v1.0.0

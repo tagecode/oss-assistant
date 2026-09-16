@@ -22,12 +22,12 @@ Download the installer for your platform from the [Releases](https://github.com/
 
 Supported providers:
 
-| Provider           | Required fields                                      |
-| ------------------ | ---------------------------------------------------- |
-| Qiniu Kodo         | Access Key, Secret Key, region (z0 / z1 / z2)        |
-| Alibaba Cloud OSS  | AccessKey ID, Secret, region                         |
-| AWS S3             | Access Key ID, Secret, region                        |
-| S3-compatible      | Access Key, Secret, endpoint, region                 |
+| Provider          | Required fields                               |
+| ----------------- | --------------------------------------------- |
+| Qiniu Kodo        | Access Key, Secret Key, region (z0 / z1 / z2) |
+| Alibaba Cloud OSS | AccessKey ID, Secret, region                  |
+| AWS S3            | Access Key ID, Secret, region                 |
+| S3-compatible     | Access Key, Secret, endpoint, region          |
 
 ### 3. Browse files
 
@@ -46,7 +46,10 @@ Supported providers:
 
 1. Select the files you want to download
 2. Click **Download** on the toolbar or choose **Download** from the context menu
-3. Choose a local folder to save to
+3. Files are saved to the last used download folder, or to the **default download path** from settings if you have never downloaded before
+4. To save somewhere else: **hold `Shift`** while clicking **Download**, or press `Ctrl/Cmd + Shift + D`, then pick a folder in the dialog
+
+> If a file with the same name already exists in the target folder, a conflict dialog appears first, offering overwrite, skip, or rename (rename is the default).
 
 ### 6. Delete files
 
@@ -56,12 +59,15 @@ Supported providers:
 
 ## Keyboard shortcuts
 
-| Shortcut       | Action              |
-| -------------- | ------------------- |
-| `Ctrl/Cmd + U` | Upload              |
-| `Ctrl/Cmd + D` | Download            |
-| `Delete`       | Delete selection    |
-| `F5`           | Refresh current dir |
+| Shortcut               | Action                        |
+| ---------------------- | ----------------------------- |
+| `Ctrl/Cmd + U`         | Upload                        |
+| `Ctrl/Cmd + D`         | Download                      |
+| `Ctrl/Cmd + Shift + D` | Download to a folder you pick |
+| `Delete`               | Delete selection              |
+| `F5`                   | Refresh current dir           |
+
+Holding `Shift` while clicking the toolbar button also lets you pick the download folder.
 
 ## Task center
 

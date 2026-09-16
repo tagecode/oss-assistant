@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/stores/app-store'
 import { useI18n } from '@/hooks/use-i18n'
+import { resolveDownloadDir } from '@/lib/download-path'
 import type {
   DownloadConflictAction,
   DownloadConflictItem
@@ -91,9 +92,10 @@ export function useFileActions({ objects, onDeleteRequest }: UseFileActionsOptio
         return
       }
       const settings = await window.api.getSettings()
-      let localDir = settings.lastDownloadPath ?? settings.defaultDownloadPath
-      if (forceSelect) {
-        const dir = await window.api.selectDirectory(localDir)
+      let localDir = resolveDownloadDir(settings)
+      // 没有可用目录（默认路径被清空且从未下载过）或用户按住 Shift 时，都交给目录选择器
+      if (forceSelect || !localDir) {
+        const dir = await window.api.selectDirectory(localDir || undefined)
         if (!dir) return
         localDir = dir
         await window.api.updateSettings({ lastDownloadPath: dir })
