@@ -1,13 +1,24 @@
 import { randomUUID } from 'crypto'
 import { basename } from 'path'
 import { BrowserWindow } from 'electron'
-import type { TransferTask, TransferType } from '../../shared/types/storage'
+import type { TransferProgress, TransferTask, TransferType } from '../../shared/types/storage'
 import { AccountService } from './account-service'
 import { SettingsService } from './settings-service'
 import { QiniuProvider } from '../providers/qiniu-provider'
 import { AliyunOssProvider } from '../providers/aliyun-oss-provider'
 import { S3Provider } from '../providers/s3-provider'
-import { accountToCredentials, type StorageProvider } from '../providers/base-provider'
+import {
+  accountToCredentials,
+  type ProviderCredentials,
+  type StorageProvider,
+  type UploadCheckpoint
+} from '../providers/base-provider'
+import {
+  MAX_UPLOAD_RETRIES,
+  RETRY_BASE_DELAY_MS,
+  abortableDelay,
+  isRetryableUploadError
+} from '../providers/multipart'
 import { redactSensitiveText } from './redaction-service'
 
 interface CreateUploadParams {
@@ -33,14 +44,17 @@ export class TransferService {
   private tasks: TransferTask[] = []
   private running = 0
   private abortControllers = new Map<string, AbortController>()
+  private uploadCheckpoints = new Map<string, UploadCheckpoint>()
   private accountService: AccountService
   private settingsService: SettingsService
   private providers: Record<string, StorageProvider>
+  private retryBaseDelayMs: number
 
   constructor(
     accountService: AccountService,
     settingsService: SettingsService,
-    providers?: Record<string, StorageProvider>
+    providers?: Record<string, StorageProvider>,
+    retryBaseDelayMs = RETRY_BASE_DELAY_MS
   ) {
     this.accountService = accountService
     this.settingsService = settingsService
@@ -50,6 +64,7 @@ export class TransferService {
       'aws-s3': new S3Provider(),
       's3-compatible': new S3Provider()
     }
+    this.retryBaseDelayMs = retryBaseDelayMs
   }
 
   list(): TransferTask[] {
@@ -131,40 +146,13 @@ export class TransferService {
         this.accountService.getSecret(task.accountId)
       )
 
-      const onProgress = (progress: {
-        transferredBytes: number
-        totalBytes: number
-        speedBytesPerSecond: number
-        estimatedRemainingSeconds: number
-        progressPercent: number
-      }): void => {
-        this.updateTask(task.id, {
-          transferredBytes: progress.transferredBytes,
-          totalBytes: progress.totalBytes,
-          speedBytesPerSecond: progress.speedBytesPerSecond,
-          estimatedRemainingSeconds: progress.estimatedRemainingSeconds,
-          progressPercent: progress.progressPercent
-        })
-      }
-
       if (task.type === 'upload' && task.localPath) {
-        await provider.uploadObject(
-          credentials,
-          task.bucket,
-          task.objectKey,
-          task.localPath,
-          onProgress,
-          controller.signal
-        )
+        await this.runUpload(task, provider, credentials, controller.signal)
       } else if (task.type === 'download' && task.localPath) {
-        await provider.downloadObject(
-          credentials,
-          task.bucket,
-          task.objectKey,
-          task.localPath,
-          onProgress,
-          controller.signal
-        )
+        await provider.downloadObject(credentials, task.bucket, task.objectKey, task.localPath, {
+          signal: controller.signal,
+          onProgress: (progress) => this.applyProgress(task.id, progress)
+        })
       } else if (task.type === 'delete') {
         const result = await provider.deleteObjects(credentials, task.bucket, [task.objectKey])
         if (result.failed.length > 0) {
@@ -172,8 +160,12 @@ export class TransferService {
         }
       }
 
+      this.uploadCheckpoints.delete(task.id)
       this.updateTask(task.id, { status: 'success', progressPercent: 100 })
     } catch (error) {
+      if (controller.signal.aborted) {
+        this.uploadCheckpoints.delete(task.id)
+      }
       const message = error instanceof Error ? redactSensitiveText(error.message) : '任务失败'
       this.updateTask(task.id, {
         status: controller.signal.aborted ? 'cancelled' : 'failed',
@@ -182,6 +174,56 @@ export class TransferService {
     } finally {
       this.abortControllers.delete(task.id)
     }
+  }
+
+  /**
+   * 上传任务带指数退避自动重试。
+   *
+   * 只有 provider 标记为可重试的错误（网络中断、限流、5xx）才重试；每次重试
+   * 复用任务检查点，已上传的分片不会被重传。
+   */
+  private async runUpload(
+    task: TransferTask,
+    provider: StorageProvider,
+    credentials: ProviderCredentials,
+    signal: AbortSignal
+  ): Promise<void> {
+    if (!task.localPath) throw new Error('缺少本地文件路径')
+
+    const maxAttempts = MAX_UPLOAD_RETRIES + 1
+    for (let attempt = 1; ; attempt++) {
+      try {
+        await provider.uploadObject(credentials, task.bucket, task.objectKey, task.localPath, {
+          signal,
+          onProgress: (progress) => this.applyProgress(task.id, progress),
+          checkpoint: this.uploadCheckpoints.get(task.id),
+          onCheckpoint: (checkpoint) => {
+            this.uploadCheckpoints.set(task.id, checkpoint)
+          }
+        })
+        return
+      } catch (error) {
+        if (signal.aborted) throw error
+        if (attempt >= maxAttempts || !isRetryableUploadError(error)) throw error
+
+        const delay = this.retryBaseDelayMs * 2 ** (attempt - 1)
+        this.updateTask(task.id, {
+          errorMessage: `网络异常或服务商限流，${Math.round(delay / 1000)} 秒后自动重试（${attempt}/${MAX_UPLOAD_RETRIES}）`
+        })
+        await abortableDelay(delay, signal)
+        this.updateTask(task.id, { errorMessage: undefined })
+      }
+    }
+  }
+
+  private applyProgress(taskId: string, progress: TransferProgress): void {
+    this.updateTask(taskId, {
+      transferredBytes: progress.transferredBytes,
+      totalBytes: progress.totalBytes,
+      speedBytesPerSecond: progress.speedBytesPerSecond,
+      estimatedRemainingSeconds: progress.estimatedRemainingSeconds,
+      progressPercent: progress.progressPercent
+    })
   }
 
   createUploadTasks(params: CreateUploadParams): TransferTask[] {
@@ -240,6 +282,8 @@ export class TransferService {
   }
 
   clearCompleted(): void {
+    const removed = this.tasks.filter((t) => t.status === 'success' || t.status === 'cancelled')
+    removed.forEach((task) => this.uploadCheckpoints.delete(task.id))
     this.tasks = this.tasks.filter((t) => t.status !== 'success' && t.status !== 'cancelled')
     this.emitUpdate()
   }

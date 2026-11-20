@@ -13,6 +13,20 @@ globalThis.ResizeObserver = class ResizeObserver {
   }
 } as typeof ResizeObserver
 
+// Radix UI 的 Select 依赖 Pointer Events 与 scrollIntoView，jsdom 默认没有实现。
+if (typeof Element.prototype.hasPointerCapture !== 'function') {
+  Element.prototype.hasPointerCapture = (): boolean => false
+}
+if (typeof Element.prototype.setPointerCapture !== 'function') {
+  Element.prototype.setPointerCapture = (): void => {}
+}
+if (typeof Element.prototype.releasePointerCapture !== 'function') {
+  Element.prototype.releasePointerCapture = (): void => {}
+}
+if (typeof Element.prototype.scrollIntoView !== 'function') {
+  Element.prototype.scrollIntoView = (): void => {}
+}
+
 const defaultSettings = {
   theme: 'system' as const,
   language: 'zh' as const,

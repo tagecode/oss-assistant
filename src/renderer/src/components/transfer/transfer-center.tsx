@@ -12,6 +12,13 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useI18n } from '@/hooks/use-i18n'
@@ -29,6 +36,21 @@ interface TransferCenterProps {
 
 const TABS = ['all', 'upload', 'download', 'delete'] as const
 
+const STATUS_FILTERS = ['all', 'queued', 'running', 'success', 'failed', 'cancelled'] as const
+type StatusFilter = (typeof STATUS_FILTERS)[number]
+
+const STATUS_LABEL_KEYS = {
+  queued: 'taskQueued',
+  running: 'taskRunning',
+  success: 'taskSuccess',
+  failed: 'taskFailed',
+  cancelled: 'taskCancelled'
+} as const
+
+function matchesStatus(task: TransferTask, status: StatusFilter): boolean {
+  return status === 'all' || task.status === status
+}
+
 export function TransferCenter({
   open,
   onOpenChange,
@@ -39,6 +61,7 @@ export function TransferCenter({
 }: TransferCenterProps): React.JSX.Element {
   const { tr } = useI18n()
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
 
   const completedCount = useMemo(
     () => tasks.filter((t) => t.status === 'success' || t.status === 'cancelled').length,
@@ -51,7 +74,7 @@ export function TransferCenter({
   }
 
   const filterByType = (type?: string): TransferTask[] =>
-    type ? tasks.filter((t) => t.type === type) : tasks
+    tasks.filter((t) => (type ? t.type === type : true) && matchesStatus(t, statusFilter))
 
   const tabLabel = (tab: (typeof TABS)[number]): string => {
     if (tab === 'all') return tr('tabAll')
@@ -65,16 +88,37 @@ export function TransferCenter({
       <SheetContent data-testid="transfer-center">
         <SheetHeader className="gap-3 pr-12">
           <SheetTitle>{tr('taskCenter')}</SheetTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-fit"
-            disabled={completedCount === 0}
-            onClick={() => setConfirmOpen(true)}
-            data-testid="clear-completed"
-          >
-            {tr('clearCompleted')}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Select
+              value={statusFilter}
+              onValueChange={(value) => setStatusFilter(value as StatusFilter)}
+            >
+              <SelectTrigger
+                className="w-36"
+                aria-label={tr('filterByStatus')}
+                data-testid="transfer-status-filter"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_FILTERS.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {status === 'all' ? tr('allStatuses') : tr(STATUS_LABEL_KEYS[status])}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-fit"
+              disabled={completedCount === 0}
+              onClick={() => setConfirmOpen(true)}
+              data-testid="clear-completed"
+            >
+              {tr('clearCompleted')}
+            </Button>
+          </div>
         </SheetHeader>
 
         <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
@@ -112,7 +156,7 @@ export function TransferCenter({
                 <div className="flex flex-col gap-3 pr-4">
                   {filterByType(tab === 'all' ? undefined : tab).length === 0 ? (
                     <p className="py-8 text-center text-sm text-muted-foreground">
-                      {tr('noTasks')}
+                      {tr(statusFilter === 'all' ? 'noTasks' : 'noTasksForFilter')}
                     </p>
                   ) : (
                     filterByType(tab === 'all' ? undefined : tab).map((task) => (

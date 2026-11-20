@@ -12,8 +12,8 @@ A cross-platform desktop app for object storage management. Manage accounts, buc
 - **Multi-cloud in one app** — Qiniu Kodo, Alibaba Cloud OSS, AWS S3, S3-compatible storage
 - **Account management** — Add, edit, and remove accounts; connection test; credentials encrypted locally
 - **File browser** — Bucket list, folder navigation, breadcrumbs, virtual scrolling for large directories
-- **File transfers** — Upload (including drag-and-drop), download, delete; multi-select and context menu
-- **Task center** — Live progress, speed, and ETA; cancel, retry, and clear completed tasks
+- **File transfers** — Upload (including drag-and-drop), download, delete; multi-select and context menu. Large files upload in parts and resume from the last completed part, with exponential backoff on throttling and network errors
+- **Task center** — Live progress, speed, and ETA; filter by type and status; cancel, retry, and clear completed tasks
 - **Settings** — Theme, Chinese/English UI, default download path, transfer concurrency, log retention
 - **Help & diagnostics** — Common errors, provider setup guides, redacted diagnostic log export
 - **Security** — Renderer isolation, IPC allowlist, no plaintext secrets on disk

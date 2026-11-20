@@ -7,14 +7,34 @@ import {
   DeleteObjectsCommand,
   GetBucketAclCommand,
   GetBucketLocationCommand,
-  HeadBucketCommand
+  HeadBucketCommand,
+  AbortMultipartUploadCommand,
+  CompleteMultipartUploadCommand,
+  CreateMultipartUploadCommand,
+  UploadPartCommand
 } from '@aws-sdk/client-s3'
 import { createReadStream, createWriteStream } from 'fs'
+import type { Stats } from 'fs'
 import { stat } from 'fs/promises'
 import { Transform } from 'stream'
 import { pipeline } from 'stream/promises'
 import type { BucketInfo, ListObjectsResult, StorageObject } from '../../shared/types/storage'
-import { type ProviderCredentials, type StorageProvider, calcProgress } from './base-provider'
+import {
+  type ProviderCredentials,
+  type StorageProvider,
+  type TransferOptions,
+  type UploadOptions,
+  calcProgress
+} from './base-provider'
+import {
+  MULTIPART_PART_SIZE_BYTES,
+  MULTIPART_THRESHOLD_BYTES,
+  countParts,
+  isCheckpointStale,
+  partByteRange,
+  resolvePartSize,
+  throwIfAborted
+} from './multipart'
 import {
   extractAwsBucketRegionFromError,
   isAwsBucketEndpointError,
@@ -22,6 +42,13 @@ import {
 } from './s3-aws-utils'
 import { parseS3BucketGrants } from './bucket-access'
 import { mapError } from './provider-errors'
+
+/** uploadId 已被服务端回收或分片列表损坏时，重新发起一次分片上传。 */
+function isRestartableMultipartError(error: unknown): boolean {
+  const name =
+    typeof error === 'object' && error !== null ? (error as { name?: string }).name : undefined
+  return name === 'NoSuchUpload' || name === 'InvalidPart' || name === 'InvalidPartOrder'
+}
 
 export class S3Provider implements StorageProvider {
   private readonly bucketRegionCache = new Map<string, string>()
@@ -236,23 +263,52 @@ export class S3Provider implements StorageProvider {
     bucket: string,
     key: string,
     localPath: string,
-    onProgress?: (progress: import('../../shared/types/storage').TransferProgress) => void,
-    signal?: AbortSignal
+    options: UploadOptions = {}
   ): Promise<void> {
-    const fileStat = await stat(localPath)
-    const total = fileStat.size
-    const startTime = Date.now()
-    let transferred = 0
+    try {
+      throwIfAborted(options.signal)
+      const fileStat = await stat(localPath)
+      const total = fileStat.size
+      const startTime = Date.now()
 
+      if (total > MULTIPART_THRESHOLD_BYTES) {
+        await this.uploadMultipart(credentials, bucket, key, localPath, {
+          ...options,
+          total,
+          startTime,
+          fileSize: fileStat.size,
+          fileMtimeMs: fileStat.mtimeMs
+        })
+      } else {
+        await this.uploadSingle(credentials, bucket, key, localPath, {
+          ...options,
+          total,
+          startTime
+        })
+      }
+    } catch (error) {
+      throw mapError(error)
+    }
+  }
+
+  /** 小于分片阈值的文件用单次 PutObject，省去三次往返。 */
+  private async uploadSingle(
+    credentials: ProviderCredentials,
+    bucket: string,
+    key: string,
+    localPath: string,
+    options: UploadOptions & { total: number; startTime: number }
+  ): Promise<void> {
+    const fileStream = createReadStream(localPath)
+    let transferred = 0
     const progressStream = new Transform({
-      transform(chunk: Buffer | string, _encoding, callback) {
+      transform: (chunk: Buffer | string, _encoding, callback) => {
         transferred += Buffer.isBuffer(chunk) ? chunk.length : Buffer.byteLength(chunk)
-        onProgress?.(calcProgress(transferred, total, startTime))
+        options.onProgress?.(calcProgress(transferred, options.total, options.startTime))
         callback(null, chunk)
       }
     })
 
-    const fileStream = createReadStream(localPath)
     fileStream.pipe(progressStream)
 
     const abortUpload = (): void => {
@@ -260,12 +316,7 @@ export class S3Provider implements StorageProvider {
       progressStream.destroy()
     }
 
-    if (signal?.aborted) {
-      abortUpload()
-      throw mapError(new Error('上传已取消'))
-    }
-
-    signal?.addEventListener('abort', abortUpload, { once: true })
+    options.signal?.addEventListener('abort', abortUpload, { once: true })
 
     try {
       await this.withBucketClient(credentials, bucket, async (client) => {
@@ -274,17 +325,171 @@ export class S3Provider implements StorageProvider {
             Bucket: bucket,
             Key: key,
             Body: progressStream,
-            ContentLength: total
+            ContentLength: options.total
           }),
-          { abortSignal: signal }
+          { abortSignal: options.signal }
         )
       })
-      onProgress?.(calcProgress(total, total, startTime))
-    } catch (error) {
-      throw mapError(error)
+      options.onProgress?.(calcProgress(options.total, options.total, options.startTime))
     } finally {
-      signal?.removeEventListener('abort', abortUpload)
+      options.signal?.removeEventListener('abort', abortUpload)
       abortUpload()
+    }
+  }
+
+  /**
+   * 大文件分片上传。
+   *
+   * 每个分片独立请求并携带 AbortSignal，取消时立即中断当前分片；已成功分片
+   * 的 uploadId + ETag 通过 onCheckpoint 交给任务层，重试时从断点继续，避免
+   * 整个文件重传。S3 单个 PutObject 上限 5GB，分片路径同时解决这个硬限制。
+   */
+  private async uploadMultipart(
+    credentials: ProviderCredentials,
+    bucket: string,
+    key: string,
+    localPath: string,
+    options: UploadOptions & {
+      total: number
+      startTime: number
+      fileSize: number
+      fileMtimeMs: number
+      allowRestart?: boolean
+    }
+  ): Promise<void> {
+    const previous =
+      options.checkpoint &&
+      !isCheckpointStale(options.checkpoint, {
+        size: options.fileSize,
+        mtimeMs: options.fileMtimeMs
+      } as Stats)
+        ? options.checkpoint
+        : undefined
+
+    const partSize = previous?.partSize ?? resolvePartSize(options.total, MULTIPART_PART_SIZE_BYTES)
+    const totalParts = countParts(options.total, partSize)
+    const completed = new Map<number, string>()
+    for (const part of previous?.parts ?? []) {
+      completed.set(part.partNumber, part.etag)
+    }
+
+    let uploadId = previous?.uploadId
+
+    const uploadedBytes = (): number => {
+      let bytes = 0
+      for (const partNumber of completed.keys()) {
+        bytes += partByteRange(options.total, partSize, partNumber).size
+      }
+      return bytes
+    }
+
+    const emitCheckpoint = (): void => {
+      if (!uploadId) return
+      options.onCheckpoint?.({
+        partSize,
+        uploadId,
+        parts: [...completed.entries()]
+          .map(([partNumber, etag]) => ({ partNumber, etag }))
+          .sort((a, b) => a.partNumber - b.partNumber),
+        fileSize: options.fileSize,
+        fileMtimeMs: options.fileMtimeMs
+      })
+    }
+
+    try {
+      await this.withBucketClient(credentials, bucket, async (client) => {
+        if (!uploadId) {
+          const created = await client.send(
+            new CreateMultipartUploadCommand({ Bucket: bucket, Key: key }),
+            { abortSignal: options.signal }
+          )
+          uploadId = created.UploadId
+          if (!uploadId) throw new Error('创建分片上传失败')
+          emitCheckpoint()
+        }
+
+        if (completed.size > 0) {
+          options.onProgress?.(calcProgress(uploadedBytes(), options.total, options.startTime))
+        }
+
+        for (let partNumber = 1; partNumber <= totalParts; partNumber++) {
+          if (completed.has(partNumber)) continue
+          throwIfAborted(options.signal)
+
+          const { start, end, size } = partByteRange(options.total, partSize, partNumber)
+          const body = createReadStream(localPath, { start, end: end - 1 })
+
+          try {
+            const response = await client.send(
+              new UploadPartCommand({
+                Bucket: bucket,
+                Key: key,
+                UploadId: uploadId,
+                PartNumber: partNumber,
+                Body: body,
+                ContentLength: size
+              }),
+              { abortSignal: options.signal }
+            )
+            if (!response.ETag) throw new Error('分片上传未返回 ETag')
+            completed.set(partNumber, response.ETag)
+          } finally {
+            body.destroy()
+          }
+
+          emitCheckpoint()
+          options.onProgress?.(calcProgress(uploadedBytes(), options.total, options.startTime))
+        }
+
+        const parts = [...completed.entries()]
+          .map(([PartNumber, ETag]) => ({ PartNumber, ETag }))
+          .sort((a, b) => a.PartNumber - b.PartNumber)
+
+        await client.send(
+          new CompleteMultipartUploadCommand({
+            Bucket: bucket,
+            Key: key,
+            UploadId: uploadId,
+            MultipartUpload: { Parts: parts }
+          }),
+          { abortSignal: options.signal }
+        )
+      })
+
+      options.onProgress?.(calcProgress(options.total, options.total, options.startTime))
+    } catch (error) {
+      if (uploadId) {
+        if (options.signal?.aborted) {
+          await this.abortMultipartQuietly(credentials, bucket, key, uploadId)
+        } else if (options.allowRestart !== false && isRestartableMultipartError(error)) {
+          // uploadId 失效（例如超时被服务端回收）时重新发起一次分片上传。
+          await this.abortMultipartQuietly(credentials, bucket, key, uploadId)
+          await this.uploadMultipart(credentials, bucket, key, localPath, {
+            ...options,
+            checkpoint: undefined,
+            allowRestart: false
+          })
+          return
+        }
+      }
+      throw error
+    }
+  }
+
+  private async abortMultipartQuietly(
+    credentials: ProviderCredentials,
+    bucket: string,
+    key: string,
+    uploadId: string
+  ): Promise<void> {
+    try {
+      await this.withBucketClient(credentials, bucket, async (client) => {
+        await client.send(
+          new AbortMultipartUploadCommand({ Bucket: bucket, Key: key, UploadId: uploadId })
+        )
+      })
+    } catch {
+      // 清理失败不影响任务结果：未完成的分片会在服务端过期回收。
     }
   }
 
@@ -293,13 +498,12 @@ export class S3Provider implements StorageProvider {
     bucket: string,
     key: string,
     localPath: string,
-    onProgress?: (progress: import('../../shared/types/storage').TransferProgress) => void,
-    signal?: AbortSignal
+    options: TransferOptions = {}
   ): Promise<void> {
     try {
       await this.withBucketClient(credentials, bucket, async (client) => {
         const response = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }), {
-          abortSignal: signal
+          abortSignal: options.signal
         })
 
         const total = Number(response.ContentLength || 0)
@@ -313,11 +517,11 @@ export class S3Provider implements StorageProvider {
         const stream = body as NodeJS.ReadableStream
         stream.on('data', (chunk: string | Buffer) => {
           transferred += Buffer.isBuffer(chunk) ? chunk.length : Buffer.byteLength(chunk)
-          onProgress?.(calcProgress(transferred, total || transferred, startTime))
+          options.onProgress?.(calcProgress(transferred, total || transferred, startTime))
         })
 
         await pipeline(stream, writer)
-        onProgress?.(calcProgress(total || transferred, total || transferred, startTime))
+        options.onProgress?.(calcProgress(total || transferred, total || transferred, startTime))
       })
     } catch (error) {
       throw mapError(error)

@@ -35,6 +35,18 @@ vi.mock('@aws-sdk/client-s3', () => ({
   },
   GetBucketAclCommand: class GetBucketAclCommand {
     constructor(public input: unknown) {}
+  },
+  CreateMultipartUploadCommand: class CreateMultipartUploadCommand {
+    constructor(public input: unknown) {}
+  },
+  UploadPartCommand: class UploadPartCommand {
+    constructor(public input: unknown) {}
+  },
+  CompleteMultipartUploadCommand: class CompleteMultipartUploadCommand {
+    constructor(public input: unknown) {}
+  },
+  AbortMultipartUploadCommand: class AbortMultipartUploadCommand {
+    constructor(public input: unknown) {}
   }
 }))
 
@@ -115,7 +127,9 @@ describe('S3Provider', () => {
     const provider = new S3Provider()
     const onProgress = vi.fn()
 
-    await provider.uploadObject(awsCredentials, 'remote-bucket', 'sample.txt', filePath, onProgress)
+    await provider.uploadObject(awsCredentials, 'remote-bucket', 'sample.txt', filePath, {
+      onProgress
+    })
 
     expect(sendMock).toHaveBeenCalledTimes(2)
     expect(onProgress).toHaveBeenCalled()
@@ -145,6 +159,132 @@ describe('S3Provider', () => {
         region: 'eu-west-1',
         permission: 'public'
       })
+    ])
+  })
+
+  it('uploads large files with multipart upload and reports a resumable checkpoint', async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'oss-assistant-multipart-'))
+    const filePath = join(tempDir, 'large.bin')
+    writeFileSync(filePath, Buffer.alloc(17 * 1024 * 1024, 7))
+
+    const commands: { type: string; input: Record<string, unknown> }[] = []
+    sendMock.mockImplementation(async (command: { input: Record<string, unknown> }) => {
+      const input = command.input
+      if (input.MultipartUpload) {
+        commands.push({ type: 'complete', input })
+        return {}
+      }
+      if (input.PartNumber !== undefined) {
+        commands.push({ type: 'part', input })
+        return { ETag: `"etag-${String(input.PartNumber)}"` }
+      }
+      if (input.Key !== undefined) {
+        commands.push({ type: 'create', input })
+        return { UploadId: 'upload-123' }
+      }
+      return { BucketRegion: 'us-east-1' }
+    })
+
+    const provider = new S3Provider()
+    const onProgress = vi.fn()
+    const onCheckpoint = vi.fn()
+
+    await provider.uploadObject(awsCredentials, 'remote-bucket', 'large.bin', filePath, {
+      onProgress,
+      onCheckpoint
+    })
+
+    const partCommands = commands.filter((c) => c.type === 'part')
+    expect(commands.filter((c) => c.type === 'create')).toHaveLength(1)
+    expect(partCommands.map((c) => c.input.PartNumber)).toEqual([1, 2, 3])
+    expect(commands.filter((c) => c.type === 'complete')).toHaveLength(1)
+
+    const lastCheckpoint = onCheckpoint.mock.calls.at(-1)?.[0]
+    expect(lastCheckpoint).toMatchObject({ uploadId: 'upload-123' })
+    expect(lastCheckpoint.parts).toHaveLength(3)
+    expect(onProgress).toHaveBeenLastCalledWith(
+      expect.objectContaining({ progressPercent: 100, transferredBytes: 17 * 1024 * 1024 })
+    )
+  })
+
+  it('resumes multipart upload from checkpoint without re-uploading finished parts', async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'oss-assistant-multipart-resume-'))
+    const filePath = join(tempDir, 'large.bin')
+    writeFileSync(filePath, Buffer.alloc(17 * 1024 * 1024, 3))
+
+    const partNumbers: number[] = []
+    let createCalls = 0
+    sendMock.mockImplementation(async (command: { input: Record<string, unknown> }) => {
+      const input = command.input
+      if (input.MultipartUpload) return {}
+      if (input.PartNumber !== undefined) {
+        partNumbers.push(Number(input.PartNumber))
+        return { ETag: `"etag-${String(input.PartNumber)}"` }
+      }
+      if (input.Key !== undefined) {
+        createCalls++
+        return { UploadId: 'upload-resumed' }
+      }
+      return { BucketRegion: 'us-east-1' }
+    })
+
+    const provider = new S3Provider()
+    await provider.uploadObject(awsCredentials, 'remote-bucket', 'large.bin', filePath, {
+      checkpoint: {
+        partSize: 8 * 1024 * 1024,
+        uploadId: 'upload-resumed',
+        parts: [{ partNumber: 1, etag: '"etag-1"' }],
+        fileSize: 17 * 1024 * 1024
+      }
+    })
+
+    expect(createCalls).toBe(0)
+    expect(partNumbers).toEqual([2, 3])
+  })
+
+  it('aborts the multipart upload and cancels in-flight part when task is cancelled', async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'oss-assistant-multipart-abort-'))
+    const filePath = join(tempDir, 'large.bin')
+    writeFileSync(filePath, Buffer.alloc(9 * 1024 * 1024, 1))
+
+    const abortCommands: Record<string, unknown>[] = []
+    let partStarted: (() => void) | undefined
+    const partStartedPromise = new Promise<void>((resolve) => {
+      partStarted = resolve
+    })
+
+    sendMock.mockImplementation(
+      (command: { input: Record<string, unknown> }, options?: { abortSignal?: AbortSignal }) => {
+        const input = command.input
+        if (input.UploadId && !input.PartNumber && !input.MultipartUpload) {
+          abortCommands.push(input)
+          return Promise.resolve({})
+        }
+        if (input.PartNumber !== undefined) {
+          partStarted?.()
+          return new Promise((_resolve, reject) => {
+            options?.abortSignal?.addEventListener('abort', () => {
+              reject(Object.assign(new Error('Aborted'), { name: 'AbortError' }))
+            })
+          })
+        }
+        if (input.Key !== undefined) return Promise.resolve({ UploadId: 'upload-abort' })
+        return Promise.resolve({ BucketRegion: 'us-east-1' })
+      }
+    )
+
+    const provider = new S3Provider()
+    const controller = new AbortController()
+    const upload = provider.uploadObject(awsCredentials, 'remote-bucket', 'large.bin', filePath, {
+      signal: controller.signal
+    })
+
+    await partStartedPromise
+    controller.abort()
+    await expect(upload).rejects.toThrow()
+
+    expect(abortCommands).toEqual([
+      expect.objectContaining({ UploadId: 'upload-abort', Key: 'large.bin' })
     ])
   })
 })

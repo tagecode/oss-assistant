@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { useI18n } from '@/hooks/use-i18n'
 import type { MessageKey } from '@/lib/i18n'
-import { formatBytes, formatDuration, formatSpeed } from '@/lib/utils'
+import { cn, formatBytes, formatDuration, formatSpeed } from '@/lib/utils'
 import type { TransferTask } from '../../../../shared/types/storage'
 
 const STATUS_KEYS: Record<string, MessageKey> = {
@@ -78,7 +78,16 @@ export function TransferTaskRow({
           </div>
         )}
 
-      {task.errorMessage && <p className="text-xs text-destructive">{task.errorMessage}</p>}
+      {task.errorMessage && (
+        <p
+          className={cn(
+            'text-xs',
+            task.status === 'running' ? 'text-muted-foreground' : 'text-destructive'
+          )}
+        >
+          {task.errorMessage}
+        </p>
+      )}
 
       <div className="flex gap-2">
         {(task.status === 'running' || task.status === 'queued') && (

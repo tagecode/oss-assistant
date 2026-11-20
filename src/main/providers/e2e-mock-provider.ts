@@ -1,12 +1,13 @@
 import { copyFileSync, existsSync, mkdirSync, statSync, writeFileSync } from 'fs'
 import { dirname } from 'path'
-import type {
-  BucketInfo,
-  ListObjectsResult,
-  StorageObject,
-  TransferProgress
-} from '../../shared/types/storage'
-import { type ProviderCredentials, type StorageProvider, calcProgress } from './base-provider'
+import type { BucketInfo, ListObjectsResult, StorageObject } from '../../shared/types/storage'
+import {
+  type ProviderCredentials,
+  type StorageProvider,
+  type TransferOptions,
+  type UploadOptions,
+  calcProgress
+} from './base-provider'
 
 const MOCK_BUCKET = 'e2e-mock-bucket'
 
@@ -99,9 +100,9 @@ export class E2eMockProvider implements StorageProvider {
     bucket: string,
     key: string,
     localPath: string,
-    onProgress?: (progress: TransferProgress) => void,
-    signal?: AbortSignal
+    options: UploadOptions = {}
   ): Promise<void> {
+    const signal = options.signal
     if (signal?.aborted) throw new Error('上传已取消')
     const fileStat = statSync(localPath)
     const total = fileStat.size
@@ -112,7 +113,7 @@ export class E2eMockProvider implements StorageProvider {
       if (signal?.aborted) throw new Error('上传已取消')
       const transferred = Math.round((i / steps) * total)
       const startTime = Date.now() - (i / steps) * (stepDelay * steps)
-      onProgress?.(calcProgress(transferred, total, startTime))
+      options.onProgress?.(calcProgress(transferred, total, startTime))
       if (i < steps) await sleep(stepDelay)
     }
 
@@ -131,9 +132,9 @@ export class E2eMockProvider implements StorageProvider {
     bucket: string,
     key: string,
     localPath: string,
-    onProgress?: (progress: TransferProgress) => void,
-    signal?: AbortSignal
+    options: TransferOptions = {}
   ): Promise<void> {
+    const signal = options.signal
     if (signal?.aborted) throw new Error('下载已取消')
     const store = bucketStore(bucket)
     const obj = store.get(key)
@@ -150,7 +151,7 @@ export class E2eMockProvider implements StorageProvider {
       if (signal?.aborted) throw new Error('下载已取消')
       const transferred = Math.round((i / steps) * total)
       const startTime = Date.now() - (i / steps) * (stepDelay * steps)
-      onProgress?.(calcProgress(transferred, total, startTime))
+      options.onProgress?.(calcProgress(transferred, total, startTime))
       if (i < steps) await sleep(stepDelay)
     }
 
@@ -161,7 +162,7 @@ export class E2eMockProvider implements StorageProvider {
     }
 
     const startTime = Date.now() - 200
-    onProgress?.(calcProgress(total, total, startTime))
+    options.onProgress?.(calcProgress(total, total, startTime))
   }
 
   async deleteObjects(

@@ -1,18 +1,17 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import type { TransferProgress } from '../../../src/shared/types/storage'
 import { AccountService } from '../../../src/main/services/account-service'
 import { CredentialService } from '../../../src/main/services/credential-service'
 import { SettingsService } from '../../../src/main/services/settings-service'
 import { TransferService } from '../../../src/main/services/transfer-service'
-import type { StorageProvider } from '../../../src/main/providers/base-provider'
+import type { StorageProvider, UploadOptions } from '../../../src/main/providers/base-provider'
 
 function createMockProvider(overrides: Partial<StorageProvider> = {}): StorageProvider {
   return {
     testConnection: vi.fn(),
     listBuckets: vi.fn(),
     listObjects: vi.fn(),
-    uploadObject: vi.fn(async (_c, _b, _k, _p, onProgress?: (p: TransferProgress) => void) => {
-      onProgress?.({
+    uploadObject: vi.fn(async (_c, _b, _k, _p, options: UploadOptions = {}) => {
+      options.onProgress?.({
         transferredBytes: 100,
         totalBytes: 100,
         speedBytesPerSecond: 1000,
@@ -132,5 +131,85 @@ describe('TransferService', () => {
     await vi.waitFor(() => {
       expect(service.list().find((t) => t.id === task.id)?.status).toBe('success')
     })
+  })
+
+  it('automatically retries retryable upload errors and reuses the checkpoint', async () => {
+    const attempts: (string | undefined)[] = []
+    const checkpointSeen: (string | undefined)[] = []
+
+    const flakyProvider = createMockProvider({
+      uploadObject: vi.fn(async (_c, _b, _k, _p, options: UploadOptions = {}) => {
+        attempts.push(options.checkpoint?.uploadId)
+        options.onCheckpoint?.({
+          partSize: 8 * 1024 * 1024,
+          uploadId: 'upload-1',
+          parts: [{ partNumber: 1, etag: '"etag-1"' }]
+        })
+        if (attempts.length === 1) {
+          throw Object.assign(new Error('rate limited'), { retryable: true })
+        }
+        checkpointSeen.push(options.checkpoint?.uploadId)
+      })
+    })
+
+    const accountService = new AccountService(new CredentialService())
+    const created = accountService.create({
+      name: '自动重试',
+      provider: 'qiniu',
+      accessKeyId: 'AKID',
+      secretKey: 'SECRET'
+    })
+    const settingsService = new SettingsService()
+    settingsService.update({ transferConcurrency: 1 })
+    const service = new TransferService(
+      accountService,
+      settingsService,
+      { qiniu: flakyProvider },
+      1
+    )
+
+    const [task] = service.createUploadTasks({
+      accountId: created.id,
+      bucket: 'demo',
+      prefix: '',
+      localPaths: ['C:/tmp/flaky.txt']
+    })
+
+    await vi.waitFor(() => {
+      expect(service.list().find((t) => t.id === task.id)?.status).toBe('success')
+    })
+
+    expect(attempts).toEqual([undefined, 'upload-1'])
+    expect(checkpointSeen).toEqual(['upload-1'])
+  })
+
+  it('does not retry non-retryable upload errors', async () => {
+    const uploadMock = vi.fn(async () => {
+      throw new Error('认证失败')
+    })
+    const provider = createMockProvider({ uploadObject: uploadMock })
+
+    const accountService = new AccountService(new CredentialService())
+    const created = accountService.create({
+      name: '不可重试',
+      provider: 'qiniu',
+      accessKeyId: 'AKID',
+      secretKey: 'SECRET'
+    })
+    const service = new TransferService(accountService, new SettingsService(), {
+      qiniu: provider
+    })
+
+    const [task] = service.createUploadTasks({
+      accountId: created.id,
+      bucket: 'demo',
+      prefix: '',
+      localPaths: ['C:/tmp/denied.txt']
+    })
+
+    await vi.waitFor(() => {
+      expect(service.list().find((t) => t.id === task.id)?.status).toBe('failed')
+    })
+    expect(uploadMock).toHaveBeenCalledTimes(1)
   })
 })

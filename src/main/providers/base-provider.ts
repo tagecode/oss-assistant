@@ -16,6 +16,43 @@ export interface ProviderCredentials {
   pathStyleAccess?: boolean
 }
 
+/** 一个已成功上传的分片，重试时据此跳过重复传输。 */
+export interface UploadedPart {
+  partNumber: number
+  etag: string
+}
+
+/**
+ * 分片上传检查点。不同服务商记录的信息不同：
+ * - S3 / 兼容 S3：`uploadId` + 已完成 `parts`
+ * - 阿里云 OSS：`uploadId` + `parts`（用于重建 SDK checkpoint）
+ * - 七牛：`resumeDir` + `resumeKey`（SDK 自带断点记录器）
+ *
+ * `fileSize` / `fileMtimeMs` 用于校验本地文件在重试之间是否被改动，避免用旧
+ * 分片拼接出一个内容不完整的对象。
+ */
+export interface UploadCheckpoint {
+  partSize: number
+  uploadId?: string
+  parts?: UploadedPart[]
+  resumeDir?: string
+  resumeKey?: string
+  fileSize?: number
+  fileMtimeMs?: number
+}
+
+export interface TransferOptions {
+  onProgress?: (progress: TransferProgress) => void
+  signal?: AbortSignal
+}
+
+export interface UploadOptions extends TransferOptions {
+  /** 上一次尝试留下的检查点，存在时从已完成的分片继续。 */
+  checkpoint?: UploadCheckpoint
+  /** 每完成一个分片回调一次，供调用方保存检查点。 */
+  onCheckpoint?: (checkpoint: UploadCheckpoint) => void
+}
+
 export interface StorageProvider {
   testConnection(credentials: ProviderCredentials): Promise<void>
   listBuckets(credentials: ProviderCredentials): Promise<BucketInfo[]>
@@ -30,16 +67,14 @@ export interface StorageProvider {
     bucket: string,
     key: string,
     localPath: string,
-    onProgress?: (progress: TransferProgress) => void,
-    signal?: AbortSignal
+    options?: UploadOptions
   ): Promise<void>
   downloadObject(
     credentials: ProviderCredentials,
     bucket: string,
     key: string,
     localPath: string,
-    onProgress?: (progress: TransferProgress) => void,
-    signal?: AbortSignal
+    options?: TransferOptions
   ): Promise<void>
   deleteObjects(
     credentials: ProviderCredentials,

@@ -68,6 +68,50 @@ describe('TransferCenter', () => {
     expect(screen.getByTestId('clear-completed')).toBeDisabled()
   })
 
+  it('filters tasks by status', async () => {
+    const user = userEvent.setup()
+
+    renderWithProviders(
+      <TransferCenter
+        open
+        onOpenChange={vi.fn()}
+        tasks={mockTasks}
+        onCancel={vi.fn()}
+        onRetry={vi.fn()}
+        onClearCompleted={vi.fn()}
+      />
+    )
+
+    expect(screen.getByText('logo.png')).toBeInTheDocument()
+    expect(screen.getByText('archive.zip')).toBeInTheDocument()
+
+    await user.click(screen.getByTestId('transfer-status-filter'))
+    await user.click(screen.getByRole('option', { name: '失败' }))
+
+    expect(screen.queryByText('logo.png')).not.toBeInTheDocument()
+    expect(screen.getByText('archive.zip')).toBeInTheDocument()
+  })
+
+  it('shows a filter-aware empty state', async () => {
+    const user = userEvent.setup()
+
+    renderWithProviders(
+      <TransferCenter
+        open
+        onOpenChange={vi.fn()}
+        tasks={mockTasks}
+        onCancel={vi.fn()}
+        onRetry={vi.fn()}
+        onClearCompleted={vi.fn()}
+      />
+    )
+
+    await user.click(screen.getByTestId('transfer-status-filter'))
+    await user.click(screen.getByRole('option', { name: '已取消' }))
+
+    expect(screen.getByText('没有符合筛选条件的任务')).toBeInTheDocument()
+  })
+
   it('asks for confirmation before clearing completed tasks', async () => {
     const user = userEvent.setup()
     const onClearCompleted = vi.fn()

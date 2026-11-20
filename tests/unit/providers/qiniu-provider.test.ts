@@ -1,9 +1,19 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { mkdtempSync, writeFileSync } from 'fs'
+import { tmpdir } from 'os'
+import { join } from 'path'
 import { QiniuProvider } from '../../../src/main/providers/qiniu-provider'
 
 const listPrefixMock = vi.fn()
 const listBucketMock = vi.fn()
 const getBucketInfoMock = vi.fn()
+const { resumePutStreamMock, recorderGetSyncMock, recorderDeleteSyncMock, putExtraCreateMock } =
+  vi.hoisted(() => ({
+    resumePutStreamMock: vi.fn(),
+    recorderGetSyncMock: vi.fn(),
+    recorderDeleteSyncMock: vi.fn(),
+    putExtraCreateMock: vi.fn()
+  }))
 
 vi.mock('qiniu', () => {
   class MockMac {
@@ -33,6 +43,10 @@ vi.mock('qiniu', () => {
 
   class MockPutExtra {}
 
+  class MockResumeUploader {
+    putStreamV2 = resumePutStreamMock
+  }
+
   return {
     auth: { digest: { Mac: MockMac } },
     conf: { Config: MockConfig, Zone_z0: 'z0' },
@@ -45,6 +59,14 @@ vi.mock('qiniu', () => {
     form_up: {
       FormUploader: MockFormUploader,
       PutExtra: MockPutExtra
+    },
+    resume_up: {
+      ResumeUploader: MockResumeUploader,
+      PutExtra: { create: putExtraCreateMock },
+      createResumeRecorderSync: () => ({
+        getSync: recorderGetSyncMock,
+        deleteSync: recorderDeleteSyncMock
+      })
     }
   }
 })
@@ -107,5 +129,90 @@ describe('QiniuProvider', () => {
       'assets',
       expect.objectContaining({ marker: 'page-1', delimiter: '/' })
     )
+  })
+
+  it('uploads large files through the resumable v2 uploader with a checkpoint', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'oss-assistant-qiniu-'))
+    const filePath = join(dir, 'large.bin')
+    writeFileSync(filePath, Buffer.alloc(9 * 1024 * 1024, 2))
+
+    recorderGetSyncMock.mockReturnValue(undefined)
+    putExtraCreateMock.mockImplementation(
+      (
+        _fname: string | undefined,
+        _params: unknown,
+        _mime: string | undefined,
+        _record: string | undefined,
+        progressCallback: (uploaded: number, total: number) => void,
+        partSize: number
+      ) => ({ progressCallback, partSize })
+    )
+    resumePutStreamMock.mockImplementation(
+      async (
+        _token: string,
+        _key: string,
+        _stream: unknown,
+        total: number,
+        extra: { progressCallback: (uploaded: number, total: number) => void }
+      ) => {
+        extra.progressCallback(total, total)
+        return { ok: () => true }
+      }
+    )
+
+    const provider = new QiniuProvider()
+    const onCheckpoint = vi.fn()
+    const onProgress = vi.fn()
+
+    await provider.uploadObject(credentials, 'assets', 'large.bin', filePath, {
+      onCheckpoint,
+      onProgress
+    })
+
+    expect(putExtraCreateMock).toHaveBeenCalledWith(
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      expect.any(Function),
+      4 * 1024 * 1024,
+      'v2',
+      undefined,
+      expect.anything(),
+      expect.any(String)
+    )
+
+    const checkpoint = onCheckpoint.mock.calls.at(-1)?.[0]
+    expect(checkpoint).toMatchObject({ partSize: 4 * 1024 * 1024 })
+    expect(checkpoint.resumeKey).toEqual(expect.any(String))
+    expect(recorderDeleteSyncMock).toHaveBeenCalledWith(checkpoint.resumeKey)
+    expect(onProgress).toHaveBeenLastCalledWith(expect.objectContaining({ progressPercent: 100 }))
+  })
+
+  it('cancels a resumable upload and clears its resume record', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'oss-assistant-qiniu-'))
+    const filePath = join(dir, 'large.bin')
+    writeFileSync(filePath, Buffer.alloc(9 * 1024 * 1024, 5))
+
+    recorderGetSyncMock.mockReturnValue(undefined)
+    putExtraCreateMock.mockReturnValue({})
+    resumePutStreamMock.mockImplementation(() => new Promise(() => {}))
+
+    const provider = new QiniuProvider()
+    const controller = new AbortController()
+    let resumeKey: string | undefined
+    const upload = provider.uploadObject(credentials, 'assets', 'large.bin', filePath, {
+      signal: controller.signal,
+      onCheckpoint: (checkpoint) => {
+        resumeKey = checkpoint.resumeKey
+      }
+    })
+
+    await vi.waitFor(() => {
+      expect(resumeKey).toBeDefined()
+    })
+    controller.abort()
+    await expect(upload).rejects.toThrow()
+    expect(recorderDeleteSyncMock).toHaveBeenCalledWith(resumeKey)
   })
 })
