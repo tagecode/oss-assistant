@@ -71,6 +71,8 @@ pnpm install
 pnpm dev
 ```
 
+> 部分 Windows 环境（安全软件 HIPS、受限账户、AppContainer ACL 异常等）无法初始化 Chromium 沙箱，Electron 会直接以 `STATUS_BREAKPOINT (0x80000003)` 退出。`pnpm dev` 捕获该退出码后会自动加 `--noSandbox` 重试一次并打印警告；修复环境后可用 `pnpm dev:strict` 强制走完整沙箱。预览构建用 `pnpm start` / `pnpm start:strict`。
+
 ### 构建
 
 ```bash

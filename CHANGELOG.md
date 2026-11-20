@@ -24,6 +24,7 @@
 
 ### Fixed
 
+- **`pnpm dev` 在无法初始化 Chromium 沙箱的 Windows 环境直接退出**：Electron 以 `STATUS_BREAKPOINT (0x80000003)` 崩溃时（安全软件 HIPS、受限账户、AppContainer ACL 异常等，原生 Electron 应用同样复现），新的开发启动器会打印说明并自动改用 `--noSandbox` 重试一次，`pnpm start` 同理；保留 `pnpm dev:strict` / `pnpm start:strict` 强制完整沙箱，并在启动前清除 `ELECTRON_RUN_AS_NODE`
 - E2E 在无头 Linux 上无法保存账户：runner 没有系统 keyring，`safeStorage.isEncryptionAvailable()` 为 false 导致凭证加密抛错。E2E 现在把 `allowInsecureCredentialStorage` 预置进 userData，与用户在设置页勾选走同一条代码路径（主进程无测试专用分支）
 
 ## [1.0.1] - 2026-09-16

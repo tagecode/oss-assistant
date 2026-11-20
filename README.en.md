@@ -71,6 +71,8 @@ pnpm install
 pnpm dev
 ```
 
+> On some Windows hosts (security-suite HIPS, restricted accounts, broken AppContainer ACLs, ...) Chromium's sandbox cannot initialise and Electron exits with `STATUS_BREAKPOINT (0x80000003)`. `pnpm dev` catches that exit code, retries once with `--noSandbox`, and prints a warning. Run `pnpm dev:strict` to require the full sandbox. Preview builds use `pnpm start` / `pnpm start:strict`.
+
 ### Build
 
 ```bash
