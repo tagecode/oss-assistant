@@ -7,6 +7,10 @@ import path from 'path'
 export async function launchApp(options?: {
   mockCloud?: boolean
   userDataDir?: string
+  /** 新建 userDataDir 时是否预置凭证降级开关。凭证存储用例需要关掉它来走设置页路径。 */
+  seedCredentialFallback?: boolean
+  /** 追加给 Electron 主进程的环境变量，用于调整 Mock Provider 的时序。 */
+  env?: Record<string, string>
 }): Promise<{ app: ElectronApplication; window: Page; userDataDir: string }> {
   const userDataDir =
     options?.userDataDir ??
@@ -18,11 +22,13 @@ export async function launchApp(options?: {
     // 主进程启动时读到它就会降级为内存密钥，与用户在设置页勾选完全同一条代码路径。
     // 有 keyring 的环境下这个开关是空操作，不会掩盖真实的加密行为。
     // 复用同一 userDataDir 重启的用例不预置，以免覆盖上一次运行持久化的设置。
-    fs.writeFileSync(
-      path.join(userDataDir, 'settings.json'),
-      JSON.stringify({ allowInsecureCredentialStorage: true }),
-      'utf-8'
-    )
+    if (options?.seedCredentialFallback !== false) {
+      fs.writeFileSync(
+        path.join(userDataDir, 'settings.json'),
+        JSON.stringify({ allowInsecureCredentialStorage: true }),
+        'utf-8'
+      )
+    }
   }
 
   const mainArgs = [
@@ -34,13 +40,20 @@ export async function launchApp(options?: {
   // appendSwitch 这个开关（见 playwright-core 的 electron loader），而 basic 后端恰恰是
   // isEncryptionAvailable() 返回 false 的原因。降级只能通过上面的设置项触发。
 
+  const env: Record<string, string | undefined> = {
+    ...process.env,
+    NODE_ENV: 'production',
+    ...(options?.mockCloud ? { E2E_MOCK_CLOUD: '1' } : {}),
+    ...(options?.env ?? {})
+  }
+  // 某些终端/CI 包装器会预设 ELECTRON_RUN_AS_NODE=1。Electron 会以纯 Node 进程启动，
+  // 主进程拿不到 app/BrowserWindow，表现为 Playwright "Process failed to launch"。
+  // 这是启动器环境问题，不是应用问题，所以只在测试入口清掉。
+  delete env.ELECTRON_RUN_AS_NODE
+
   const app = await electron.launch({
     args: mainArgs,
-    env: {
-      ...process.env,
-      NODE_ENV: 'production',
-      ...(options?.mockCloud ? { E2E_MOCK_CLOUD: '1' } : {})
-    }
+    env: env as Record<string, string>
   })
 
   const window = await app.firstWindow()

@@ -37,13 +37,15 @@ bash scripts/ci-run-e2e.sh
 
 ## 测试范围
 
-| 文件                               | 说明                                       |
-| ---------------------------------- | ------------------------------------------ |
-| `app-launch.spec.ts`               | 应用启动冒烟（无需云凭证）                 |
-| `ui-navigation.spec.ts`            | 空状态、设置、帮助对话框导航（无需云凭证） |
-| `settings-and-diagnostics.spec.ts` | 设置保存、诊断导出脱敏（无需云凭证）       |
-| `cloud-workflow.spec.ts`           | 云存储完整流程（Mock 或七牛凭证）          |
-| `transfer-progress.spec.ts`        | 上传/下载进度与速度展示（Mock 或七牛凭证） |
+| 文件                               | 说明                                                   |
+| ---------------------------------- | ------------------------------------------------------ |
+| `app-launch.spec.ts`               | 应用启动冒烟（无需云凭证）                             |
+| `ui-navigation.spec.ts`            | 空状态、设置、帮助对话框导航（无需云凭证）             |
+| `settings-and-diagnostics.spec.ts` | 设置保存、诊断导出脱敏（无需云凭证）                   |
+| `credential-storage.spec.ts`       | 无 keyring 时设置页启用内存密钥、重启后仍可解密        |
+| `cloud-workflow.spec.ts`           | 云存储完整流程（Mock 或七牛凭证）                      |
+| `transfer-progress.spec.ts`        | 上传/下载进度与速度展示（Mock 或七牛凭证）             |
+| `multipart-transfer.spec.ts`       | 分片上传、自动/手动断点续传、取消与状态筛选（仅 Mock） |
 
 E2E 断言使用 `data-testid` 与稳定表单 `id`（如 `#name`），不依赖界面语言。
 公共选择器见 `tests/e2e/helpers/locators.ts`。
@@ -58,6 +60,20 @@ E2E 断言使用 `data-testid` 与稳定表单 `id`（如 `#name`），不依赖
 E2E_MOCK_CLOUD=1 pnpm test:e2e
 ```
 
+Mock Provider 还支持几个仅测试用的开关：
+
+- `E2E_MOCK_STEP_DELAY_MS`：小文件 5 段进度的每段间隔，默认 `50`。
+- `E2E_MOCK_PART_DELAY_MS`：大文件每个分片的间隔，默认 `120`；取消用例把它调大，
+  保证点击取消时上传仍在进行。
+- 文件名包含 `e2e-retryable` 时，Mock 会在第 1 个分片后抛一次可重试错误；并且
+  第二次尝试必须收到带分片的 checkpoint，否则直接失败，用来验证断点真的被复用。
+- 文件名包含 `e2e-manual-retry` 时，Mock 会在第 1 个分片后抛不可重试错误：任务停在
+  `failed` 但保留 checkpoint；用户点「重试」后同样必须带着 checkpoint 才能成功。
+
+`launchApp` 会把 Electron 主进程环境里的 `ELECTRON_RUN_AS_NODE` 清掉：某些终端
+或 CI 包装器会预设该变量，导致 Electron 退化成纯 Node 进程、Playwright 报
+`Process failed to launch`。
+
 ### 真实七牛云
 
 配置以下环境变量后运行完整上传/下载/删除流程：
@@ -67,7 +83,10 @@ E2E_MOCK_CLOUD=1 pnpm test:e2e
 - `E2E_QINIU_BUCKET`
 - `E2E_QINIU_REGION`（可选，如 `z0`）
 
-未配置 Mock 且无凭证时 `cloud-workflow.spec.ts` 与 `transfer-progress.spec.ts` 自动跳过。
+未配置 Mock 且无凭证时 `cloud-workflow.spec.ts`、`transfer-progress.spec.ts` 与
+`multipart-transfer.spec.ts` 自动跳过；`credential-storage.spec.ts` 需要 Mock
+Provider 创建账户，未设置 `E2E_MOCK_CLOUD=1` 时也跳过。它只在没有系统密钥环的
+环境执行（CI 的 headless Linux），因此本地 macOS 上通常是 skipped。
 
 ## 失败排查
 

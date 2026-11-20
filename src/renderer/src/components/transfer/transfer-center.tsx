@@ -102,7 +102,11 @@ export function TransferCenter({
               </SelectTrigger>
               <SelectContent>
                 {STATUS_FILTERS.map((status) => (
-                  <SelectItem key={status} value={status}>
+                  <SelectItem
+                    key={status}
+                    value={status}
+                    data-testid={`transfer-status-filter-${status}`}
+                  >
                     {status === 'all' ? tr('allStatuses') : tr(STATUS_LABEL_KEYS[status])}
                   </SelectItem>
                 ))}

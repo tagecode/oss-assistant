@@ -91,13 +91,23 @@ export function TransferTaskRow({
 
       <div className="flex gap-2">
         {(task.status === 'running' || task.status === 'queued') && (
-          <Button size="sm" variant="outline" onClick={() => onCancel(task.id)}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onCancel(task.id)}
+            data-testid="cancel-transfer"
+          >
             <X className="size-3.5" />
             {tr('cancel')}
           </Button>
         )}
         {task.status === 'failed' && (
-          <Button size="sm" variant="outline" onClick={() => onRetry(task.id)}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onRetry(task.id)}
+            data-testid="retry-transfer"
+          >
             <RotateCcw className="size-3.5" />
             {tr('retry')}
           </Button>

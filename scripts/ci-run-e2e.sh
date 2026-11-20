@@ -7,11 +7,11 @@ set -euo pipefail
 #   （verify action 里排在前面），这里只做存在性检查，避免静默跑到旧产物上。
 # - 无头 Linux runner 没有 DISPLAY，Electron 建窗口会失败，需要用 xvfb 包一层。
 #   本地已有图形会话时（DISPLAY 已设置）直接跑，不套 xvfb。
-# - E2E_MOCK_CLOUD=1 让 cloud-workflow / transfer-progress 走内存 Mock Provider，
-#   无需真实云凭证；其余用例本来就不需要凭证。
-# - runner 上没有系统 keyring，safeStorage 不可用，保存账户会抛错。测试自己会把
-#   allowInsecureCredentialStorage 预置进 userData（见 tests/e2e/helpers/launch.ts），
-#   不需要这里额外设环境变量。
+# - E2E_MOCK_CLOUD=1 让 cloud-workflow / transfer-progress / multipart-transfer /
+#   credential-storage 使用内存 Mock Provider，无需真实云凭证。
+# - runner 上没有系统 keyring，safeStorage 不可用。credential-storage 用例会真实
+#   打开设置页开启内存密钥；其余用例由 launch.ts 把
+#   allowInsecureCredentialStorage 预置进 userData，走的也是同一条代码路径。
 
 if [[ ! -f out/main/index.js ]]; then
   echo "out/main/index.js 不存在，请先执行 pnpm build" >&2

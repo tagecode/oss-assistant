@@ -12,6 +12,10 @@ export const testId = {
   transferCenter: 'transfer-center',
   transferTask: 'transfer-task',
   taskStatus: 'task-status',
+  taskProgress: 'task-progress',
+  cancelTransfer: 'cancel-transfer',
+  retryTransfer: 'retry-transfer',
+  transferStatusFilter: 'transfer-status-filter',
   toolbarRefresh: 'toolbar-refresh',
   toolbarDelete: 'toolbar-delete',
   confirmDeleteObjects: 'confirm-delete-objects',
@@ -21,6 +25,8 @@ export const testId = {
   headerHelp: 'header-help',
   settingsLogRetention: 'settings-log-retention',
   settingsAutoUpdate: 'settings-auto-update',
+  settingsAllowInsecureCredentials: 'settings-allow-insecure-credentials',
+  credentialWarning: 'credential-warning',
   exportDiagnostics: 'export-diagnostics'
 } as const
 
