@@ -44,6 +44,54 @@ test.describe('设置与诊断', () => {
     await closeApp(app, userDataDir)
   })
 
+  test('窗口高度不足时设置弹窗自适应并滚动正文', async () => {
+    const { app, window, userDataDir } = await launchApp()
+
+    // 应用最小窗口高度为 600，视口会更矮；设置项较多时必须完整落在视口内。
+    await app.evaluate(({ BrowserWindow }) => {
+      BrowserWindow.getAllWindows()[0]?.setSize(1024, 600)
+    })
+    await expect.poll(() => window.evaluate(() => window.innerHeight)).toBeLessThan(620)
+
+    await window.getByTestId(testId.headerSettings).click()
+    const dialog = window.getByTestId(testId.settingsDialog)
+    await expect(dialog).toBeVisible()
+
+    const viewport = await window.evaluate(() => ({
+      width: window.innerWidth,
+      height: window.innerHeight
+    }))
+    await expect
+      .poll(
+        async () => {
+          const box = await dialog.boundingBox()
+          if (!box) return false
+          return (
+            box.x >= 0 &&
+            box.y >= 0 &&
+            box.x + box.width <= viewport.width + 1 &&
+            box.y + box.height <= viewport.height + 1
+          )
+        },
+        { message: '设置弹窗应完整位于视口内' }
+      )
+      .toBe(true)
+
+    const scroll = dialog.locator('[data-dialog-scroll]')
+    const metrics = await scroll.evaluate((element) => ({
+      scrollHeight: element.scrollHeight,
+      clientHeight: element.clientHeight
+    }))
+    expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight)
+
+    await scroll.evaluate((element) => {
+      element.scrollTop = element.scrollHeight
+    })
+    await expect(dialog.getByText(/v\d+\.\d+\.\d+/)).toBeVisible()
+
+    await closeApp(app, userDataDir)
+  })
+
   test('设置保存后重启应用仍生效', async () => {
     const { app, window, userDataDir } = await launchApp()
 
