@@ -7,7 +7,7 @@
 1. 先执行生产构建：`pnpm build`（Playwright 启动的是 `out/main/index.js`）
 2. 安装 Playwright 系统依赖：`pnpm exec playwright install-deps chromium`
 
-   无需下载浏览器：Electron 用例用的是 `node_modules` 里的 Electron 二进制。无头 Linux 环境还需要 `xvfb`。
+   无需下载浏览器：Electron 用例用的是 `node_modules` 里的 Electron 二进制。无头 Linux 环境还需要 `xvfb` 和 `openbox`（Xvfb 没有窗口管理器，最大化/最小化状态不会生效）。
 
 ## 运行
 
@@ -21,7 +21,7 @@ pnpm test:e2e
 E2E_MOCK_CLOUD=1 pnpm test:e2e
 ```
 
-无头 Linux 下用统一入口，脚本会自动套 `xvfb` 并设置 `E2E_MOCK_CLOUD=1`：
+无头 Linux 下用统一入口，脚本会自动套 `xvfb` + `openbox` 并设置 `E2E_MOCK_CLOUD=1`：
 
 ```bash
 bash scripts/ci-run-e2e.sh

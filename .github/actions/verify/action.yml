@@ -27,11 +27,13 @@ runs:
       shell: bash
       run: pnpm exec playwright install-deps chromium
 
-    # install-deps 不保证带上 xvfb，显式装一次（已安装时 apt 直接成功返回）。
-    - name: Install xvfb
+    # install-deps 不保证带上 xvfb；显式装一次（已安装时 apt 直接成功返回）。
+    # Xvfb 本身没有窗口管理器，Electron 的 maximize/minimize 不会真正生效，
+    # 自绘标题栏用例需要 openbox 提供 EWMH 窗口状态管理。
+    - name: Install xvfb and openbox
       if: runner.os == 'Linux'
       shell: bash
-      run: sudo apt-get install -y xvfb
+      run: sudo apt-get install -y xvfb openbox
 
     - name: E2E tests
       shell: bash
