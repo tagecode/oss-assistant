@@ -59,7 +59,11 @@ function DialogContent({
         {...props}
       >
         {/* 内容超出窗口高度时只滚动正文，右上角关闭按钮保持可见。 */}
-        <div data-dialog-scroll className="grid min-h-0 gap-4 overflow-y-auto overscroll-contain">
+        {/* 焦点环绘制在控件边界外，滚动容器必须留出内边距，否则输入框左右两侧的焦点环会被 overflow 裁掉；负外边距保持内容原来的对齐位置。 */}
+        <div
+          data-dialog-scroll
+          className="-m-1 grid min-h-0 gap-4 overflow-y-auto overscroll-contain p-1"
+        >
           {children}
         </div>
         <DialogPrimitive.Close

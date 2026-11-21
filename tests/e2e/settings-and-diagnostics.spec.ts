@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Locator } from '@playwright/test'
 import fs from 'fs'
 import { testId } from './helpers/locators'
 import { closeApp, launchApp } from './helpers/launch'
@@ -50,6 +50,48 @@ test.describe('设置与诊断', () => {
     expect(content).toContain('appVersion')
 
     fs.rmSync(exportPath, { force: true })
+    await closeApp(app, userDataDir)
+  })
+
+  test('弹窗输入框的焦点环不被滚动容器裁切', async () => {
+    const { app, window, userDataDir } = await launchApp()
+
+    const measureFocusRing = (
+      input: Locator
+    ): Promise<{ leftGap: number; rightGap: number; boxShadow: string }> =>
+      input.evaluate((element) => {
+        const scroll = element.closest('[data-dialog-scroll]')
+        if (!scroll) throw new Error('输入框不在弹窗滚动容器内')
+        const inputBox = element.getBoundingClientRect()
+        const scrollBox = scroll.getBoundingClientRect()
+        return {
+          leftGap: inputBox.left - scrollBox.left,
+          rightGap: scrollBox.right - inputBox.right,
+          boxShadow: getComputedStyle(element).boxShadow
+        }
+      })
+
+    // 设置弹窗：默认下载路径、日志保留天数等输入框都是整行宽度，最容易贴住滚动容器边缘。
+    await window.getByTestId(testId.headerSettings).click()
+    const retention = window.getByTestId(testId.settingsLogRetention)
+    await retention.focus()
+    const settingsRing = await measureFocusRing(retention)
+    expect(settingsRing.boxShadow).toMatch(/rgb\(34, 197, 94\)/)
+    expect(settingsRing.leftGap).toBeGreaterThanOrEqual(2)
+    expect(settingsRing.rightGap).toBeGreaterThanOrEqual(2)
+
+    await window.getByTestId(testId.dialogClose).click()
+
+    // 账户弹窗同样使用 DialogContent，应共享同一个修复。
+    await window.getByTestId(testId.addAccount).click()
+    const name = window.locator('#name')
+    await expect(name).toBeVisible()
+    await name.focus()
+    const accountRing = await measureFocusRing(name)
+    expect(accountRing.boxShadow).toMatch(/rgb\(34, 197, 94\)/)
+    expect(accountRing.leftGap).toBeGreaterThanOrEqual(2)
+    expect(accountRing.rightGap).toBeGreaterThanOrEqual(2)
+
     await closeApp(app, userDataDir)
   })
 
