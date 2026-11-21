@@ -7,8 +7,11 @@
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-21
+
 ### Added
 
+- **统一自绘标题栏**：移除三端系统原生标题栏，改用应用内标题栏和最小化/最大化/关闭按钮；窗口拖动、最大化/还原、最小化、关闭行为跨平台一致，macOS 额外支持双击标题栏最大化
 - **E2E 纳入 CI**：`Verify` 阶段新增 Playwright E2E（lint → typecheck → 单元/组件测试 → 生产构建 → E2E）。CI 与 `Build & Release` 共用同一 composite action，E2E 失败会同时挡住日常 CI 与发版
 - 新增 `scripts/ci-run-e2e.sh` 统一入口：无头 Linux 自动套 `xvfb`，并设置 `E2E_MOCK_CLOUD=1`
 - E2E 失败时上传 `e2e-report` artifact（trace + HTML 报告），保留 7 天
@@ -21,9 +24,12 @@
 ### Changed
 
 - `playwright.config.ts` 在 CI 上启用 `retries: 1`，使 `trace: 'on-first-retry'` 真正生效（此前 `retries: 0`，失败时永远不会录制 trace）
+- CI 的 E2E 在 Xvfb 中启动 `openbox`，使无头 Linux 上的窗口最大化/最小化用例可以真实执行
 
 ### Fixed
 
+- **设置等长弹窗被视口裁切**：弹窗限制在视口内，正文区域独立滚动，关闭按钮始终可见
+- **自绘标题栏拖拽区吞掉弹窗关闭点击**：弹窗内容标记为不可拖拽，并扩大关闭按钮命中区域，真实鼠标点击可以正常关闭
 - **`pnpm dev` 在无法初始化 Chromium 沙箱的 Windows 环境直接退出**：Electron 以 `STATUS_BREAKPOINT (0x80000003)` 崩溃时（安全软件 HIPS、受限账户、AppContainer ACL 异常等，原生 Electron 应用同样复现），新的开发启动器会打印说明并自动改用 `--noSandbox` 重试一次，`pnpm start` 同理；保留 `pnpm dev:strict` / `pnpm start:strict` 强制完整沙箱，并在启动前清除 `ELECTRON_RUN_AS_NODE`
 - E2E 在无头 Linux 上无法保存账户：runner 没有系统 keyring，`safeStorage.isEncryptionAvailable()` 为 false 导致凭证加密抛错。E2E 现在把 `allowInsecureCredentialStorage` 预置进 userData，与用户在设置页勾选走同一条代码路径（主进程无测试专用分支）
 
@@ -73,6 +79,7 @@
 - Access Key 与 Secret 不以明文写入本地持久化文件
 - 诊断日志与错误提示经过脱敏处理，不包含明文密钥
 
-[Unreleased]: https://github.com/tagecode/oss-assistant/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/tagecode/oss-assistant/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/tagecode/oss-assistant/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/tagecode/oss-assistant/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/tagecode/oss-assistant/releases/tag/v1.0.0

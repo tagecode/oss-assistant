@@ -32,9 +32,9 @@ Get installers for your platform from [Releases](https://github.com/tagecode/oss
 
 | Platform | Example filename                          |
 | -------- | ----------------------------------------- |
-| Windows  | `oss-assistant-v1.0.0-win-x64-setup.exe`  |
-| macOS    | `oss-assistant-v1.0.0-mac-arm64.dmg`      |
-| Linux    | `oss-assistant-v1.0.0-linux-x64.AppImage` |
+| Windows  | `oss-assistant-v1.1.0-win-x64-setup.exe`  |
+| macOS    | `oss-assistant-v1.1.0-mac-arm64.dmg`      |
+| Linux    | `oss-assistant-v1.1.0-linux-x64.AppImage` |
 
 For detailed usage, see the [User Guide](docs/USER_GUIDE.en.md).
 
