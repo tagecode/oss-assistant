@@ -8,7 +8,8 @@ test.describe('设置与诊断', () => {
     const { app, window, userDataDir } = await launchApp()
 
     await window.getByTestId(testId.headerSettings).click()
-    await expect(window.getByTestId(testId.settingsDialog)).toBeVisible()
+    const dialog = window.getByTestId(testId.settingsDialog)
+    await expect(dialog).toBeVisible()
 
     const retention = window.getByTestId(testId.settingsLogRetention)
     await retention.fill('14')
@@ -28,7 +29,15 @@ test.describe('设置与诊断', () => {
     expect(saved.logRetentionDays).toBe(14)
     expect(saved.autoCheckUpdate).toBe(false)
 
-    await window.keyboard.press('Escape')
+    // 自绘标题栏的拖拽区会盖住弹窗顶部；弹窗必须声明 no-drag，
+    // 否则真实鼠标点击右上角关闭按钮会被窗口拖拽命中测试吞掉。
+    expect(
+      await dialog.evaluate((element) =>
+        getComputedStyle(element).getPropertyValue('-webkit-app-region')
+      )
+    ).toBe('no-drag')
+    await window.getByTestId(testId.dialogClose).click()
+    await expect(dialog).toBeHidden()
 
     await window.getByTestId(testId.headerHelp).click()
     await expect(window.getByTestId(testId.helpDialog)).toBeVisible()

@@ -21,6 +21,7 @@ export const testId = {
   confirmDeleteObjects: 'confirm-delete-objects',
   settingsDialog: 'settings-dialog',
   helpDialog: 'help-dialog',
+  dialogClose: 'dialog-close',
   headerSettings: 'header-settings',
   headerHelp: 'header-help',
   windowTitlebar: 'window-titlebar',

@@ -50,9 +50,10 @@ function DialogContent({
   return (
     <DialogPortal>
       <DialogOverlay />
+      {/* 弹窗会覆盖自绘标题栏的拖拽区，必须声明 no-drag；否则真实鼠标点击弹窗顶部控件会被窗口拖拽命中测试吞掉。 */}
       <DialogPrimitive.Content
         className={cn(
-          'fixed left-[50%] top-[50%] z-50 flex max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-lg translate-x-[-50%] translate-y-[-50%] flex-col border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-lg',
+          'window-no-drag fixed left-[50%] top-[50%] z-50 flex max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-lg translate-x-[-50%] translate-y-[-50%] flex-col border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-lg',
           className
         )}
         {...props}
@@ -61,7 +62,10 @@ function DialogContent({
         <div data-dialog-scroll className="grid min-h-0 gap-4 overflow-y-auto overscroll-contain">
           {children}
         </div>
-        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer">
+        <DialogPrimitive.Close
+          data-testid="dialog-close"
+          className="absolute right-2 top-2 inline-flex size-8 cursor-pointer items-center justify-center rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring"
+        >
           <X className="size-4" />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>
