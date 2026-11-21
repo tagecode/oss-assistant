@@ -45,8 +45,11 @@ function DialogOverlay({
 function DialogContent({
   className,
   children,
+  header,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Content>): React.JSX.Element {
+}: React.ComponentProps<typeof DialogPrimitive.Content> & {
+  header?: React.ReactNode
+}): React.JSX.Element {
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -58,6 +61,8 @@ function DialogContent({
         )}
         {...props}
       >
+        {/* 标题固定在滚动区域之外，滚动条从标题下方开始，不会穿过右上角的关闭按钮。 */}
+        {header ? <div className="shrink-0 pb-4 pr-10">{header}</div> : null}
         {/* 内容超出窗口高度时只滚动正文，右上角关闭按钮保持可见。 */}
         {/* 焦点环绘制在控件边界外，滚动容器必须留出内边距，否则输入框左右两侧的焦点环会被 overflow 裁掉；负外边距保持内容原来的对齐位置。 */}
         <div

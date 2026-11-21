@@ -68,11 +68,15 @@ export function HelpDialog({ open, onOpenChange }: HelpDialogProps): React.JSX.E
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg" data-testid="help-dialog">
-        <DialogHeader>
-          <DialogTitle>{tr('helpAndDiagnostics')}</DialogTitle>
-        </DialogHeader>
-
+      <DialogContent
+        className="max-w-lg"
+        data-testid="help-dialog"
+        header={
+          <DialogHeader>
+            <DialogTitle>{tr('helpAndDiagnostics')}</DialogTitle>
+          </DialogHeader>
+        }
+      >
         <div className="flex flex-col gap-4">
           <section>
             <h3 className="mb-2 text-sm font-semibold">{tr('commonErrors')}</h3>

@@ -57,14 +57,17 @@ export function DownloadConflictDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="size-5 text-amber-500" />
-            {tr('downloadConflictTitle')}
-          </DialogTitle>
-        </DialogHeader>
-
+      <DialogContent
+        className="max-w-lg"
+        header={
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="size-5 text-amber-500" />
+              {tr('downloadConflictTitle')}
+            </DialogTitle>
+          </DialogHeader>
+        }
+      >
         <p className="text-sm text-muted-foreground">{tr('downloadConflictDesc')}</p>
 
         <div className="flex items-center gap-2 text-sm">

@@ -206,10 +206,6 @@ function AccountFormBody({
 
   return (
     <>
-      <DialogHeader>
-        <DialogTitle>{account ? tr('editAccount') : tr('addAccount')}</DialogTitle>
-      </DialogHeader>
-
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="name">{tr('accountName')}</Label>
@@ -392,12 +388,20 @@ function AccountFormBody({
 }
 
 export function AccountFormDialog(props: AccountFormDialogProps): React.JSX.Element {
-  const { locale } = useI18n()
+  const { tr, locale } = useI18n()
   const formSessionKey = props.open ? `${locale}:${props.account?.id ?? 'new'}` : `${locale}:idle`
 
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent className="max-w-lg" data-testid="account-form-dialog">
+      <DialogContent
+        className="max-w-lg"
+        data-testid="account-form-dialog"
+        header={
+          <DialogHeader>
+            <DialogTitle>{props.account ? tr('editAccount') : tr('addAccount')}</DialogTitle>
+          </DialogHeader>
+        }
+      >
         {props.open ? <AccountFormBody key={formSessionKey} {...props} /> : null}
       </DialogContent>
     </Dialog>

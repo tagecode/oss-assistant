@@ -135,9 +135,16 @@ test.describe('设置与诊断', () => {
     }))
     expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight)
 
+    // 标题区固定在滚动区域之外，滚动条的起点必须在关闭按钮下方，不能穿过标题栏。
+    const closeBox = await window.getByTestId(testId.dialogClose).boundingBox()
+    const scrollBox = await scroll.boundingBox()
+    if (!closeBox || !scrollBox) throw new Error('无法测量弹窗关闭按钮或滚动容器')
+    expect(scrollBox.y).toBeGreaterThanOrEqual(closeBox.y + closeBox.height)
+
     await scroll.evaluate((element) => {
       element.scrollTop = element.scrollHeight
     })
+    await expect(dialog.getByRole('heading', { name: '设置' })).toBeVisible()
     await expect(dialog.getByText(/v\d+\.\d+\.\d+/)).toBeVisible()
 
     await closeApp(app, userDataDir)

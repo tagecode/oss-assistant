@@ -18,10 +18,15 @@ export function ObjectPropertiesDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md" data-testid="object-properties-dialog">
-        <DialogHeader>
-          <DialogTitle>{tr('objectProperties')}</DialogTitle>
-        </DialogHeader>
+      <DialogContent
+        className="max-w-md"
+        data-testid="object-properties-dialog"
+        header={
+          <DialogHeader>
+            <DialogTitle>{tr('objectProperties')}</DialogTitle>
+          </DialogHeader>
+        }
+      >
         {object && (
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
             <dt className="text-muted-foreground">{tr('name')}</dt>

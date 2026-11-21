@@ -63,11 +63,15 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps): Rea
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md" data-testid="settings-dialog">
-        <DialogHeader>
-          <DialogTitle>{tr('settings')}</DialogTitle>
-        </DialogHeader>
-
+      <DialogContent
+        className="max-w-md"
+        data-testid="settings-dialog"
+        header={
+          <DialogHeader>
+            <DialogTitle>{tr('settings')}</DialogTitle>
+          </DialogHeader>
+        }
+      >
         <div className="flex flex-col gap-6">
           <section className="flex flex-col gap-3">
             <h3 className="text-sm font-semibold">{tr('appearance')}</h3>
