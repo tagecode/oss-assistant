@@ -39,15 +39,7 @@ jobs:
         include:
           - os: macos-15
             platform: mac
-            arch: arm64
-            artifact_glob: |
-              release/oss-assistant-v*.dmg
-              release/oss-assistant-v*.zip
-              release/latest-mac.yml
-              release/*.blockmap
-          - os: macos-15
-            platform: mac
-            arch: x64
+            arch: both
             artifact_glob: |
               release/oss-assistant-v*.dmg
               release/oss-assistant-v*.zip
@@ -66,7 +58,7 @@ jobs:
             artifact_glob: |
               release/oss-assistant-v*.AppImage
               release/oss-assistant-v*.deb
-              release/latest-linux.yml
+              release/latest-linux*.yml
               release/*.blockmap
           - os: ubuntu-24.04-arm
             platform: linux
@@ -74,7 +66,7 @@ jobs:
             artifact_glob: |
               release/oss-assistant-v*.AppImage
               release/oss-assistant-v*.deb
-              release/latest-linux.yml
+              release/latest-linux*.yml
               release/*.blockmap
 
     runs-on: ${{ matrix.os }}
@@ -118,6 +110,23 @@ jobs:
           path: artifacts
           merge-multiple: true
 
+      - name: Verify update metadata covers every platform
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in latest.yml latest-mac.yml latest-linux.yml latest-linux-arm64.yml; do
+            path=$(find artifacts -type f -name "$file" -print -quit)
+            if [ -z "$path" ]; then
+              echo "Missing update metadata: $file"
+              exit 1
+            fi
+          done
+          mac_feed=$(find artifacts -type f -name latest-mac.yml -print -quit)
+          grep -q 'mac-arm64' "$mac_feed"
+          grep -q 'mac-x64' "$mac_feed"
+          linux_arm_feed=$(find artifacts -type f -name latest-linux-arm64.yml -print -quit)
+          grep -q 'linux-arm64' "$linux_arm_feed"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -129,7 +138,7 @@ jobs:
             artifacts/**/oss-assistant-v*.deb
             artifacts/**/latest.yml
             artifacts/**/latest-mac.yml
-            artifacts/**/latest-linux.yml
+            artifacts/**/latest-linux*.yml
             artifacts/**/*.blockmap
           generate_release_notes: true
           body: |

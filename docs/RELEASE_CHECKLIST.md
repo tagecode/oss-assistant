@@ -93,7 +93,8 @@ E2E_MOCK_CLOUD=1 pnpm test:e2e
 - [ ] 安装包已上传至发布渠道
 - [ ] Release Notes 已编写
 - [ ] `docs/USER_GUIDE.md` 与版本功能一致
-- [ ] GitHub Release 包含自动更新元数据（`latest.yml` / `latest-mac.yml` / `latest-linux.yml` 及 `.blockmap`）
+- [ ] GitHub Release 包含自动更新元数据（`latest.yml` / `latest-mac.yml` / `latest-linux.yml` / `latest-linux-arm64.yml` 及 `.blockmap`）
+- [ ] `latest-mac.yml` 同时包含 x64 与 arm64 产物；Linux 各架构有对应 yml，且条目指向本架构安装包
 - [ ] `electron-builder.yml` 中 `publish` 指向 `tagecode/oss-assistant`
 
 ## 回滚预案

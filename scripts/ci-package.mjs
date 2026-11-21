@@ -32,7 +32,12 @@ const builderArgs = [
 ]
 
 if (platform === 'mac') {
-  builderArgs.push('--mac', arch === 'arm64' ? '--arm64' : '--x64')
+  // Build both mac architectures in one invocation so electron-builder emits a
+  // single latest-mac.yml containing x64 and arm64 artifacts for auto-update.
+  builderArgs.push(
+    '--mac',
+    ...(arch === 'both' ? ['--arm64', '--x64'] : [arch === 'arm64' ? '--arm64' : '--x64'])
+  )
 } else if (platform === 'win') {
   builderArgs.push('--win', '--x64')
 } else if (platform === 'linux') {
