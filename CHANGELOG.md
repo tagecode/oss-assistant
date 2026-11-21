@@ -7,6 +7,13 @@
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-21
+
+### Fixed
+
+- **弹窗输入框焦点环被裁切**：设置、添加账户等弹窗的正文滚动容器没有内边距，输入框整行贴边，外侧 2px 焦点环在左右两侧被裁掉；现在为滚动容器保留 4px 绘制空间，同时用负外边距保持内容对齐，所有弹窗统一生效
+- **任务中心状态筛选常驻绿色边框**：下拉框此前使用 `focus` 样式，鼠标选择后焦点回到触发器，绿色焦点环会一直保留，看起来像“已选中”；改为仅在键盘聚焦（`:focus-visible`）时显示，鼠标操作不再出现误导性的绿色边框
+
 ## [1.1.0] - 2026-11-21
 
 ### Added
@@ -79,7 +86,8 @@
 - Access Key 与 Secret 不以明文写入本地持久化文件
 - 诊断日志与错误提示经过脱敏处理，不包含明文密钥
 
-[Unreleased]: https://github.com/tagecode/oss-assistant/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/tagecode/oss-assistant/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/tagecode/oss-assistant/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/tagecode/oss-assistant/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/tagecode/oss-assistant/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/tagecode/oss-assistant/releases/tag/v1.0.0
