@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react'
 import { Cloud, HelpCircle, ListTodo, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { WindowControls } from '@/components/layout/window-controls'
 import { useI18n } from '@/hooks/use-i18n'
 import { cn } from '@/lib/utils'
 
@@ -20,13 +22,38 @@ export function AppHeader({
   onToggleTransferCenter
 }: AppHeaderProps): React.JSX.Element {
   const { tr } = useI18n()
+  const [platform, setPlatform] = useState<string | null>(null)
+
+  useEffect(() => {
+    let active = true
+    void window.api.getPlatform().then((value) => {
+      if (active) setPlatform(value)
+    })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  // Windows/Linux 会把拖拽区当作非客户区（HTCAPTION），双击由系统/窗口管理器
+  // 直接最大化；macOS 的无边框窗口没有这个原生行为，这里补上。只在 macOS 处理，
+  // 避免其他平台上系统和脚本各切换一次。
+  const handleTitleBarDoubleClick = (event: React.MouseEvent<HTMLElement>): void => {
+    if (platform !== 'darwin') return
+    if ((event.target as HTMLElement).closest('button, [data-testid="window-controls"]')) return
+    void window.api.windowToggleMaximize()
+  }
+
   return (
-    <header className="flex h-12 shrink-0 items-center justify-between border-b border-border px-4">
-      <div className="flex items-center gap-2">
-        <Cloud className="size-5 text-primary" />
+    <header
+      className="window-drag flex h-12 shrink-0 select-none items-center justify-between border-b border-border pl-4 pr-2"
+      data-testid="window-titlebar"
+      onDoubleClick={handleTitleBarDoubleClick}
+    >
+      <div className="window-drag flex items-center gap-2">
+        <Cloud className="size-5 text-primary" aria-hidden="true" />
         <h1 className="text-sm font-semibold">{tr('appTitle')}</h1>
       </div>
-      <div className="flex items-center gap-1">
+      <div className="window-no-drag flex items-center gap-1">
         {onToggleTransferCenter && (
           <Button
             variant="ghost"
@@ -70,6 +97,8 @@ export function AppHeader({
         >
           <HelpCircle className="size-4" />
         </Button>
+        <div className="mx-1 h-5 w-px bg-border" aria-hidden="true" />
+        <WindowControls />
       </div>
     </header>
   )

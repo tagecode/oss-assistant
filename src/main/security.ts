@@ -3,6 +3,11 @@ import type { WebPreferences } from 'electron'
 export const ALLOWED_IPC_CHANNELS = [
   'app:getVersion',
   'app:getPlatform',
+  'window:minimize',
+  'window:toggleMaximize',
+  'window:close',
+  'window:isMaximized',
+  'window:maximized-change',
   'accounts:list',
   'accounts:create',
   'accounts:update',

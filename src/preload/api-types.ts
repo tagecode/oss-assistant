@@ -12,6 +12,11 @@ import type {
 export interface OssApi {
   getVersion: () => Promise<string>
   getPlatform: () => Promise<string>
+  windowMinimize: () => Promise<void>
+  windowToggleMaximize: () => Promise<boolean>
+  windowClose: () => Promise<void>
+  windowIsMaximized: () => Promise<boolean>
+  onWindowMaximizedChange: (callback: (maximized: boolean) => void) => () => void
   listAccounts: () => Promise<AccountPublic[]>
   createAccount: (input: AccountInput) => Promise<AccountPublic>
   updateAccount: (id: string, input: Partial<AccountInput>) => Promise<AccountPublic>

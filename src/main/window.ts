@@ -11,11 +11,21 @@ export function createMainWindow(): BrowserWindow {
     minWidth: 1024,
     minHeight: 600,
     show: false,
+    frame: false,
     autoHideMenuBar: true,
     title: 'OSS 助手',
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: getSecureWebPreferences(join(__dirname, '../preload/index.js'))
   })
+
+  const notifyMaximized = (): void => {
+    if (!mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('window:maximized-change', mainWindow.isMaximized())
+    }
+  }
+
+  mainWindow.on('maximize', notifyMaximized)
+  mainWindow.on('unmaximize', notifyMaximized)
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()

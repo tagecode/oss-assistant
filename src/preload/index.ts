@@ -5,6 +5,15 @@ import type { TransferTask } from '../shared/types/storage'
 const api: OssApi = {
   getVersion: () => ipcRenderer.invoke('app:getVersion'),
   getPlatform: () => ipcRenderer.invoke('app:getPlatform'),
+  windowMinimize: () => ipcRenderer.invoke('window:minimize'),
+  windowToggleMaximize: () => ipcRenderer.invoke('window:toggleMaximize'),
+  windowClose: () => ipcRenderer.invoke('window:close'),
+  windowIsMaximized: () => ipcRenderer.invoke('window:isMaximized'),
+  onWindowMaximizedChange: (callback) => {
+    const handler = (_: Electron.IpcRendererEvent, maximized: boolean): void => callback(maximized)
+    ipcRenderer.on('window:maximized-change', handler)
+    return () => ipcRenderer.removeListener('window:maximized-change', handler)
+  },
   listAccounts: () => ipcRenderer.invoke('accounts:list'),
   createAccount: (input) => ipcRenderer.invoke('accounts:create', input),
   updateAccount: (id, input) => ipcRenderer.invoke('accounts:update', id, input),

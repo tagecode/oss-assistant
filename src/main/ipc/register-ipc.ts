@@ -1,4 +1,5 @@
-import { ipcMain, dialog, app } from 'electron'
+import { ipcMain, dialog, app, BrowserWindow } from 'electron'
+import type { IpcMainInvokeEvent } from 'electron'
 import { isAllowedChannel } from '../security'
 import { AccountService } from '../services/account-service'
 import { CredentialService } from '../services/credential-service'
@@ -22,6 +23,27 @@ export function registerIpcHandlers(
 ): void {
   ipcMain.handle('app:getVersion', () => app.getVersion())
   ipcMain.handle('app:getPlatform', () => process.platform)
+
+  const windowFromEvent = (event: IpcMainInvokeEvent): BrowserWindow | null =>
+    BrowserWindow.fromWebContents(event.sender)
+
+  ipcMain.handle('window:minimize', (event) => {
+    windowFromEvent(event)?.minimize()
+  })
+  ipcMain.handle('window:toggleMaximize', (event) => {
+    const window = windowFromEvent(event)
+    if (!window) return false
+    if (window.isMaximized()) {
+      window.unmaximize()
+    } else {
+      window.maximize()
+    }
+    return window.isMaximized()
+  })
+  ipcMain.handle('window:close', (event) => {
+    windowFromEvent(event)?.close()
+  })
+  ipcMain.handle('window:isMaximized', (event) => windowFromEvent(event)?.isMaximized() ?? false)
 
   ipcMain.handle('accounts:list', () => accountService.list())
   ipcMain.handle('accounts:create', (_e, input: AccountInput) => accountService.create(input))

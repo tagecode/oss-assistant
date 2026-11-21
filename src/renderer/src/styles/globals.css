@@ -102,3 +102,12 @@
       sans-serif;
   }
 }
+
+@layer utilities {
+  .window-drag {
+    -webkit-app-region: drag;
+  }
+  .window-no-drag {
+    -webkit-app-region: no-drag;
+  }
+}

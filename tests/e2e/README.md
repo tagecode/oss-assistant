@@ -40,6 +40,7 @@ bash scripts/ci-run-e2e.sh
 | 文件                               | 说明                                                   |
 | ---------------------------------- | ------------------------------------------------------ |
 | `app-launch.spec.ts`               | 应用启动冒烟（无需云凭证）                             |
+| `window-chrome.spec.ts`            | 自绘标题栏、无边框窗口与最小化/最大化/还原（无需凭证） |
 | `ui-navigation.spec.ts`            | 空状态、设置、帮助对话框导航（无需云凭证）             |
 | `settings-and-diagnostics.spec.ts` | 设置保存、诊断导出脱敏（无需云凭证）                   |
 | `credential-storage.spec.ts`       | 无 keyring 时设置页启用内存密钥、重启后仍可解密        |

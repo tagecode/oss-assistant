@@ -15,6 +15,10 @@ export function resolveLocale(setting: LanguageSetting): Language {
 const messages = {
   zh: {
     appTitle: 'OSS 助手',
+    minimizeWindow: '最小化',
+    maximizeWindow: '最大化',
+    restoreWindow: '还原',
+    closeWindow: '关闭窗口',
     settings: '设置',
     help: '帮助',
     helpAndDiagnostics: '帮助与诊断',
@@ -195,6 +199,10 @@ const messages = {
   },
   en: {
     appTitle: 'OSS Assistant',
+    minimizeWindow: 'Minimize',
+    maximizeWindow: 'Maximize',
+    restoreWindow: 'Restore',
+    closeWindow: 'Close window',
     settings: 'Settings',
     help: 'Help',
     helpAndDiagnostics: 'Help & Diagnostics',

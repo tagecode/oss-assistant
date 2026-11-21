@@ -20,6 +20,8 @@ describe('security', () => {
     expect(ALLOWED_IPC_CHANNELS).toContain('transfer:createUpload')
     expect(ALLOWED_IPC_CHANNELS).toContain('fs:pathsExist')
     expect(ALLOWED_IPC_CHANNELS).toContain('fs:resolveDownloadPaths')
+    expect(ALLOWED_IPC_CHANNELS).toContain('window:toggleMaximize')
+    expect(ALLOWED_IPC_CHANNELS).toContain('window:close')
   })
 
   it('defines production CSP', () => {
