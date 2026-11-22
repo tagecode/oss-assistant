@@ -144,7 +144,8 @@ test.describe('设置与诊断', () => {
     await scroll.evaluate((element) => {
       element.scrollTop = element.scrollHeight
     })
-    await expect(dialog.getByRole('heading', { name: '设置' })).toBeVisible()
+    // CI 的 Linux 环境是英文界面，标题按层级定位，避免断言依赖中文文案。
+    await expect(dialog.getByRole('heading', { level: 2 })).toBeVisible()
     await expect(dialog.getByText(/v\d+\.\d+\.\d+/)).toBeVisible()
 
     await closeApp(app, userDataDir)
