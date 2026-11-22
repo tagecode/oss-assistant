@@ -7,6 +7,13 @@
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-11-22
+
+### Fixed
+
+- **设置弹窗标题与滚动条重叠**：弹窗标题改为固定标题区，正文独立滚动，滚动条从标题下方开始，不再穿过右上角关闭按钮；同时修复标题在滚动到底部时不可见的问题
+- E2E 的弹窗标题断言改为按标题层级定位，不再依赖中文界面文案，避免英文环境下 CI 失败
+
 ## [1.1.1] - 2026-11-21
 
 ### Fixed
@@ -86,7 +93,8 @@
 - Access Key 与 Secret 不以明文写入本地持久化文件
 - 诊断日志与错误提示经过脱敏处理，不包含明文密钥
 
-[Unreleased]: https://github.com/tagecode/oss-assistant/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/tagecode/oss-assistant/compare/v1.1.2...HEAD
+[1.1.2]: https://github.com/tagecode/oss-assistant/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/tagecode/oss-assistant/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/tagecode/oss-assistant/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/tagecode/oss-assistant/compare/v1.0.0...v1.0.1
