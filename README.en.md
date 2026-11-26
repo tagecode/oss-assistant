@@ -36,6 +36,8 @@ Get installers for your platform from [Releases](https://github.com/tagecode/oss
 | macOS    | `oss-assistant-v1.1.2-mac-arm64.dmg`      |
 | Linux    | `oss-assistant-v1.1.2-linux-x64.AppImage` |
 
+> **Unsigned builds**: Release packages are not code-signed or notarized. On macOS, allow the app in **System Settings → Privacy & Security** on first launch; Windows may show a SmartScreen warning. macOS auto-update may also fail signature validation, in which case download and install the `.dmg` manually. See the [unsigned build notice](docs/UNSIGNED_BUILD.en.md).
+
 For detailed usage, see the [User Guide](docs/USER_GUIDE.en.md).
 
 ## Screenshots
@@ -139,7 +141,7 @@ The app uses [electron-updater](https://www.electron.build/auto-update) to check
 - Config: `electron-builder.yml` and `dev-app-update.yml` (`provider: github`)
 - With “Auto-check for updates” enabled in Settings, the app checks for new releases on startup
 
-> macOS auto-update requires `.zip` packages and `latest-mac.yml` on the Release; CI uploads these with each build.
+> macOS auto-update requires `.zip` packages and `latest-mac.yml` on the Release; CI uploads these with each build. Auto-update may fail for unsigned builds; install the `.dmg` manually in that case. See the [unsigned build notice](docs/UNSIGNED_BUILD.en.md).
 
 ## Release
 
@@ -171,6 +173,7 @@ Issues and pull requests are welcome. Before submitting:
 
 - [User Guide](docs/USER_GUIDE.en.md)
 - [Release checklist](docs/RELEASE_CHECKLIST.md)
+- [Unsigned build notice](docs/UNSIGNED_BUILD.en.md)
 - [Changelog](CHANGELOG.md)
 
 ## License

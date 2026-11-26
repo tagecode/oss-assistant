@@ -7,6 +7,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- 补充未签名构建说明：macOS Gatekeeper / Windows SmartScreen 的首次启动处理、macOS 自动更新可能失败及手动安装方式
+
 ## [1.1.2] - 2026-11-22
 
 ### Fixed

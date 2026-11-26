@@ -12,6 +12,8 @@
 - macOS: `oss-assistant-v{version}-mac-{arch}.dmg`
 - Linux: `oss-assistant-v{version}-linux-{arch}.AppImage`
 
+> 发布包未做代码签名和 Apple 公证。macOS 首次打开需要在「系统设置 → 隐私与安全性」中点击「仍要打开」；Windows 可能触发 SmartScreen「更多信息 → 仍要运行」。macOS 自动更新也可能失败，需手动下载安装包。详见 [未签名构建说明](UNSIGNED_BUILD.md)。
+
 ### 2. 添加云账户
 
 1. 启动应用后，点击「添加账户」

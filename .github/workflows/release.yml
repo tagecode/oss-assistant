@@ -153,8 +153,8 @@ jobs:
             | Windows | x64 | `.exe` (NSIS) | `oss-assistant-v{version}-win-x64-setup.exe` |
             | Linux | x64 / arm64 | `.AppImage` / `.deb` | `oss-assistant-v{version}-linux-x64.AppImage`、`oss-assistant-v{version}-linux-arm64.deb` |
 
-            当前为**未签名**构建：macOS 首次打开可能需在「系统设置 → 隐私与安全性」中允许；Windows 可能触发 SmartScreen 提示。
+            当前为**未签名**构建：macOS 首次打开需在「系统设置 → 隐私与安全性」中点击「仍要打开」，Windows 可能触发 SmartScreen「更多信息 → 仍要运行」。未签名构建的 macOS 自动更新可能失败，此时请手动下载 `.dmg` 覆盖安装。
+
+            [未签名构建说明](https://github.com/${{ github.repository }}/blob/main/docs/UNSIGNED_BUILD.md) · [发布检查清单](https://github.com/${{ github.repository }}/blob/main/docs/RELEASE_CHECKLIST.md)
 
             用户数据（账户、设置）保存在系统用户目录，升级安装不会覆盖。
-
-            详见 [docs/RELEASE_CHECKLIST.md](https://github.com/${{ github.repository }}/blob/main/docs/RELEASE_CHECKLIST.md)。

@@ -55,11 +55,13 @@ pnpm build:linux
 - [ ] 首次启动无报错
 - [ ] 文件选择器、下载路径正常
 - [ ] 窗口边缘可缩放；Windows 11 贴靠布局/多显示器 DPI 表现符合预期
+- [ ] 未签名构建的 SmartScreen 提示已在 [未签名构建说明](UNSIGNED_BUILD.md) 和 Release notes 中说明
 
 ### macOS 12+
 
 - [ ] DMG 可挂载安装
-- [ ] Gatekeeper 提示可处理（如需公证需额外配置）
+- [ ] 未签名构建的 Gatekeeper 提示可处理，且已在 [未签名构建说明](UNSIGNED_BUILD.md) 和 Release notes 中说明
+- [ ] 自动更新失败时，手动下载 DMG 覆盖安装的路径可用
 - [ ] 下载到用户目录权限正常
 - [ ] 自定义窗口按钮、全屏/缩放行为符合预期
 

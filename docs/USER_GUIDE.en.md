@@ -12,6 +12,8 @@ Download the installer for your platform from the [Releases](https://github.com/
 - macOS: `oss-assistant-v{version}-mac-{arch}.dmg`
 - Linux: `oss-assistant-v{version}-linux-{arch}.AppImage`
 
+> Release packages are not code-signed or notarized. On macOS, click **Open Anyway** in **System Settings → Privacy & Security** on first launch; Windows may show SmartScreen (**More info → Run anyway**). macOS auto-update may also fail, so install the latest package manually if needed. See the [unsigned build notice](UNSIGNED_BUILD.en.md).
+
 ### 2. Add a cloud account
 
 1. After launching the app, click **Add account**

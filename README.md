@@ -36,6 +36,8 @@
 | macOS   | `oss-assistant-v1.1.2-mac-arm64.dmg`      |
 | Linux   | `oss-assistant-v1.1.2-linux-x64.AppImage` |
 
+> **未签名构建**：本项目发布包没有代码签名和 Apple 公证。macOS 首次打开需在「系统设置 → 隐私与安全性」中允许，Windows 可能触发 SmartScreen 提示；macOS 自动更新也可能因签名校验失败，需要手动下载安装包。详见 [未签名构建说明](docs/UNSIGNED_BUILD.md)。
+
 详细使用说明见 [用户指南](docs/USER_GUIDE.md)（[English](docs/USER_GUIDE.en.md)）。
 
 ## 截图
@@ -139,7 +141,7 @@ oss-assistant/
 - 配置见 `electron-builder.yml` 与 `dev-app-update.yml`（`provider: github`）
 - 设置中开启「自动检查更新」后，启动时会查询最新 Release
 
-> macOS 自动更新需要 Release 中包含 `.zip` 安装包及 `latest-mac.yml`；当前 CI 已随构建产物一并上传。
+> macOS 自动更新需要 Release 中包含 `.zip` 安装包及 `latest-mac.yml`；当前 CI 已随构建产物一并上传。未签名构建的自动更新可能失败，此时请手动下载 `.dmg` 覆盖安装，详见 [未签名构建说明](docs/UNSIGNED_BUILD.md)。
 
 ## 发布
 
@@ -171,6 +173,7 @@ git push origin v1.0.0
 
 - [用户指南](docs/USER_GUIDE.md) · [User Guide (EN)](docs/USER_GUIDE.en.md)
 - [发布检查清单](docs/RELEASE_CHECKLIST.md)
+- [未签名构建说明](docs/UNSIGNED_BUILD.md)
 - [变更日志](CHANGELOG.md)
 
 ## 许可证
