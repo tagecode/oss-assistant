@@ -52,6 +52,8 @@ export function VirtualFileTable({
             return (
               <div
                 key={obj.key}
+                data-testid="file-row"
+                data-object-key={obj.key}
                 data-index={virtualRow.index}
                 ref={virtualizer.measureElement}
                 style={{
@@ -69,6 +71,8 @@ export function VirtualFileTable({
                 onDoubleClick={() => onDoubleClick(obj)}
                 onContextMenu={(e) => {
                   e.preventDefault()
+                  // 阻止冒泡到文件区空白处的处理器，否则菜单会被重置成“无目标”。
+                  e.stopPropagation()
                   onContextMenu(obj, e)
                 }}
               >
