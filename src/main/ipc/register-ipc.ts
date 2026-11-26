@@ -9,7 +9,6 @@ import { TransferService } from '../services/transfer-service'
 import { DiagnosticService } from '../services/diagnostic-service'
 import { UpdateService } from '../services/update-service'
 import type { AccountInput, AppSettings } from '../../shared/types/storage'
-import { redactObject } from '../services/redaction-service'
 import { pathsExist, resolveDownloadPath, uniqueDownloadPath } from '../services/path-utils'
 
 export function registerIpcHandlers(
@@ -21,16 +20,16 @@ export function registerIpcHandlers(
   diagnosticService: DiagnosticService,
   updateService: UpdateService
 ): void {
-  ipcMain.handle('app:getVersion', () => app.getVersion())
-  ipcMain.handle('app:getPlatform', () => process.platform)
+  registerIpcHandler('app:getVersion', () => app.getVersion())
+  registerIpcHandler('app:getPlatform', () => process.platform)
 
   const windowFromEvent = (event: IpcMainInvokeEvent): BrowserWindow | null =>
     BrowserWindow.fromWebContents(event.sender)
 
-  ipcMain.handle('window:minimize', (event) => {
+  registerIpcHandler('window:minimize', (event) => {
     windowFromEvent(event)?.minimize()
   })
-  ipcMain.handle('window:toggleMaximize', (event) => {
+  registerIpcHandler('window:toggleMaximize', (event) => {
     const window = windowFromEvent(event)
     if (!window) return false
     if (window.isMaximized()) {
@@ -40,18 +39,21 @@ export function registerIpcHandlers(
     }
     return window.isMaximized()
   })
-  ipcMain.handle('window:close', (event) => {
+  registerIpcHandler('window:close', (event) => {
     windowFromEvent(event)?.close()
   })
-  ipcMain.handle('window:isMaximized', (event) => windowFromEvent(event)?.isMaximized() ?? false)
+  registerIpcHandler(
+    'window:isMaximized',
+    (event) => windowFromEvent(event)?.isMaximized() ?? false
+  )
 
-  ipcMain.handle('accounts:list', () => accountService.list())
-  ipcMain.handle('accounts:create', (_e, input: AccountInput) => accountService.create(input))
-  ipcMain.handle('accounts:update', (_e, id: string, input: Partial<AccountInput>) =>
+  registerIpcHandler('accounts:list', () => accountService.list())
+  registerIpcHandler('accounts:create', (_e, input: AccountInput) => accountService.create(input))
+  registerIpcHandler('accounts:update', (_e, id: string, input: Partial<AccountInput>) =>
     accountService.update(id, input)
   )
-  ipcMain.handle('accounts:delete', (_e, id: string) => accountService.delete(id))
-  ipcMain.handle(
+  registerIpcHandler('accounts:delete', (_e, id: string) => accountService.delete(id))
+  registerIpcHandler(
     'accounts:testConnection',
     async (_e, input: Partial<AccountInput>, accountId?: string) => {
       const resolved = accountService.resolveForConnection(accountId, input)
@@ -59,25 +61,25 @@ export function registerIpcHandlers(
     }
   )
 
-  ipcMain.handle('storage:listBuckets', (_e, accountId: string) =>
+  registerIpcHandler('storage:listBuckets', (_e, accountId: string) =>
     storageService.listBuckets(accountId)
   )
-  ipcMain.handle(
+  registerIpcHandler(
     'storage:listObjects',
     (_e, accountId: string, bucket: string, prefix?: string, marker?: string) =>
       storageService.listObjects(accountId, bucket, prefix, marker)
   )
 
-  ipcMain.handle('transfer:list', () => transferService.list())
-  ipcMain.handle('transfer:cancel', (_e, taskId: string) => transferService.cancel(taskId))
-  ipcMain.handle('transfer:retry', (_e, taskId: string) => transferService.retry(taskId))
-  ipcMain.handle('transfer:clearCompleted', () => transferService.clearCompleted())
-  ipcMain.handle(
+  registerIpcHandler('transfer:list', () => transferService.list())
+  registerIpcHandler('transfer:cancel', (_e, taskId: string) => transferService.cancel(taskId))
+  registerIpcHandler('transfer:retry', (_e, taskId: string) => transferService.retry(taskId))
+  registerIpcHandler('transfer:clearCompleted', () => transferService.clearCompleted())
+  registerIpcHandler(
     'transfer:createUpload',
     (_e, params: { accountId: string; bucket: string; prefix: string; localPaths: string[] }) =>
       transferService.createUploadTasks(params)
   )
-  ipcMain.handle(
+  registerIpcHandler(
     'transfer:createDownload',
     (
       _e,
@@ -85,21 +87,21 @@ export function registerIpcHandlers(
     ) => transferService.createDownloadTasks(params)
   )
 
-  ipcMain.handle('fs:pathsExist', (_e, paths: string[]) => pathsExist(paths))
-  ipcMain.handle('fs:resolveDownloadPaths', (_e, localDir: string, keys: string[]) =>
+  registerIpcHandler('fs:pathsExist', (_e, paths: string[]) => pathsExist(paths))
+  registerIpcHandler('fs:resolveDownloadPaths', (_e, localDir: string, keys: string[]) =>
     keys.map((key) => ({ key, localPath: resolveDownloadPath(localDir, key) }))
   )
-  ipcMain.handle('fs:uniqueDownloadPath', (_e, localDir: string, fileName: string) =>
+  registerIpcHandler('fs:uniqueDownloadPath', (_e, localDir: string, fileName: string) =>
     uniqueDownloadPath(localDir, fileName)
   )
-  ipcMain.handle(
+  registerIpcHandler(
     'transfer:createDelete',
     (_e, params: { accountId: string; bucket: string; keys: string[] }) =>
       transferService.createDeleteTasks(params)
   )
 
-  ipcMain.handle('settings:get', () => settingsService.get())
-  ipcMain.handle('settings:update', (_e, partial: Partial<AppSettings>) => {
+  registerIpcHandler('settings:get', () => settingsService.get())
+  registerIpcHandler('settings:update', (_e, partial: Partial<AppSettings>) => {
     const updated = settingsService.update(partial)
     if (partial.logRetentionDays !== undefined) {
       diagnosticService.pruneLogs(updated.logRetentionDays)
@@ -112,30 +114,38 @@ export function registerIpcHandlers(
     }
     return updated
   })
-  ipcMain.handle('credentials:getStorageStatus', () => credentialService.getStorageStatus())
-  ipcMain.handle('settings:selectDirectory', async (_e, defaultPath?: string) => {
+  registerIpcHandler('credentials:getStorageStatus', () => credentialService.getStorageStatus())
+  registerIpcHandler('settings:selectDirectory', async (_e, defaultPath?: string) => {
     const result = await dialog.showOpenDialog({
       defaultPath,
       properties: ['openDirectory']
     })
     return result.canceled ? null : result.filePaths[0]
   })
-  ipcMain.handle('settings:selectFiles', async () => {
+  registerIpcHandler('settings:selectFiles', async () => {
     const result = await dialog.showOpenDialog({ properties: ['openFile', 'multiSelections'] })
     return result.canceled ? [] : result.filePaths
   })
 
-  ipcMain.handle('diagnostics:getInfo', () => diagnosticService.getInfo())
-  ipcMain.handle('diagnostics:export', () => diagnosticService.export())
-
-  ipcMain.on('ping', () => console.log('pong'))
-
-  ipcMain.on('error', (_e, error: unknown) => {
-    const redacted = redactObject(error)
-    diagnosticService.appendLog(JSON.stringify(redacted))
-  })
+  registerIpcHandler('diagnostics:getInfo', () => diagnosticService.getInfo())
+  registerIpcHandler('diagnostics:export', () => diagnosticService.export())
 }
 
 export function validateIpcChannel(channel: string): boolean {
   return isAllowedChannel(channel)
+}
+
+type IpcHandler = Parameters<typeof ipcMain.handle>[1]
+
+/**
+ * 所有 ipcMain.handle 注册都必须经过这里。
+ *
+ * 白名单只有真正拦截注册才有效；仅仅维护一份常量、却在注册时绕开校验，
+ * 新增通道时就可能悄悄突破边界。
+ */
+export function registerIpcHandler(channel: string, listener: IpcHandler): void {
+  if (!validateIpcChannel(channel)) {
+    throw new Error(`IPC channel is not allowed: ${channel}`)
+  }
+  ipcMain.handle(channel, listener)
 }

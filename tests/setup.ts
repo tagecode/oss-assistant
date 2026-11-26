@@ -22,7 +22,15 @@ vi.mock('electron', () => ({
     setUsePlainTextEncryption: vi.fn()
   },
   BrowserWindow: {
-    getAllWindows: vi.fn(() => [])
+    getAllWindows: vi.fn(() => []),
+    fromWebContents: vi.fn(() => null)
+  },
+  ipcMain: {
+    handle: vi.fn(),
+    on: vi.fn()
+  },
+  dialog: {
+    showOpenDialog: vi.fn()
   }
 }))
 
