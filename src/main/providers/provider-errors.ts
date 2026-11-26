@@ -35,7 +35,7 @@ export function mapError(error: unknown): StorageProviderError {
       retryable: false
     })
   }
-  if (/NoSuchKey|not found|404/i.test(message)) {
+  if (/NoSuchKey|not found|does not exist|404/i.test(message)) {
     return new StorageProviderError({
       code: 'NOT_FOUND',
       message: '文件可能已被删除或移动',
@@ -53,7 +53,7 @@ export function mapError(error: unknown): StorageProviderError {
       retryable: false
     })
   }
-  if (/throttl|rate limit|429/i.test(message)) {
+  if (/throttl|rate limit|slowdown|requestlimitexceeded|429/i.test(message)) {
     return new StorageProviderError({
       code: 'RATE_LIMIT',
       message: '请求过于频繁，请稍后重试',
