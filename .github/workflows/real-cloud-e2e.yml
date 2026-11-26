@@ -1,0 +1,59 @@
+name: Real cloud E2E
+
+# 真实云凭证不能放进日常 CI：这里用仓库 Secrets 手动触发，只跑依赖真实
+# 七牛凭证的 cloud-workflow / transfer-progress。没有配置 Secrets 时直接失败，
+# 避免“跳过即通过”的假绿。
+on:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    env:
+      E2E_QINIU_ACCESS_KEY: ${{ secrets.E2E_QINIU_ACCESS_KEY }}
+      E2E_QINIU_SECRET_KEY: ${{ secrets.E2E_QINIU_SECRET_KEY }}
+      E2E_QINIU_BUCKET: ${{ secrets.E2E_QINIU_BUCKET }}
+      E2E_QINIU_REGION: ${{ secrets.E2E_QINIU_REGION }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: ./.github/actions/setup-pnpm
+
+      - name: Require real cloud credentials
+        shell: bash
+        run: |
+          if [[ -z "${E2E_QINIU_ACCESS_KEY}" || -z "${E2E_QINIU_SECRET_KEY}" || -z "${E2E_QINIU_BUCKET}" ]]; then
+            echo "缺少 E2E_QINIU_* Secrets，拒绝以跳过代替真实云验证。" >&2
+            exit 1
+          fi
+
+      - name: Build
+        shell: bash
+        run: pnpm build
+
+      - name: Install Playwright system dependencies
+        shell: bash
+        run: pnpm exec playwright install-deps chromium
+
+      - name: Install xvfb and openbox
+        shell: bash
+        run: sudo apt-get install -y xvfb openbox
+
+      - name: Run real cloud E2E
+        shell: bash
+        run: |
+          xvfb-run --auto-servernum --server-args="-screen 0 1280x1024x24" \
+            bash -c 'openbox --sm-disable >/tmp/openbox.log 2>&1 & sleep 1; exec pnpm exec playwright test tests/e2e/cloud-workflow.spec.ts tests/e2e/transfer-progress.spec.ts'
+
+      - name: Upload E2E report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-cloud-e2e-report
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7

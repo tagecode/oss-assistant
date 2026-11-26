@@ -1,0 +1,42 @@
+name: Cross-platform E2E
+
+# 日常 CI 只在 Linux 跑；macOS/Windows 的窗口、菜单与文件选择器行为无法在
+# Xvfb 中复现。这个手动入口用 Mock Provider 在真实桌面上跑同一套 E2E。
+on:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    name: E2E on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    env:
+      E2E_MOCK_CLOUD: '1'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: ./.github/actions/setup-pnpm
+
+      - name: Build
+        shell: bash
+        run: pnpm build
+
+      - name: Run E2E
+        shell: bash
+        run: pnpm test:e2e
+
+      - name: Upload E2E report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report-${{ matrix.os }}
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7

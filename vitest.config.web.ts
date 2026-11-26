@@ -8,7 +8,20 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     include: ['tests/component/**/*.test.tsx'],
-    setupFiles: ['./tests/setup.web.ts']
+    setupFiles: ['./tests/setup.web.ts'],
+    coverage: {
+      provider: 'v8',
+      include: ['src/renderer/src/**/*.{ts,tsx}'],
+      exclude: ['src/renderer/src/main.tsx'],
+      reportsDirectory: 'coverage/web',
+      reporter: ['text', 'html', 'lcov'],
+      thresholds: {
+        statements: 45,
+        branches: 45,
+        functions: 40,
+        lines: 45
+      }
+    }
   },
   resolve: {
     alias: {

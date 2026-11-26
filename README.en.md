@@ -98,12 +98,13 @@ pnpm format      # Prettier
 ### Tests
 
 ```bash
-pnpm test              # Unit + component tests (runs in CI)
+pnpm test              # Unit + component tests
+pnpm test:coverage     # Same, with coverage report and thresholds (runs in CI)
 pnpm test:unit         # Main-process unit tests only
 pnpm test:component    # Renderer component tests only
 ```
 
-**CI pipeline**: lint → typecheck → unit/component tests → production build → E2E. CI and `Build & Release` share `.github/actions/verify`, so an E2E failure blocks both day-to-day CI and releases.
+**CI pipeline**: lint → typecheck → unit/component tests with coverage → production build → E2E. CI and `Build & Release` share `.github/actions/verify`, so an E2E failure blocks both day-to-day CI and releases.
 
 **E2E (local)**:
 

@@ -98,12 +98,13 @@ pnpm format      # Prettier 格式化
 ### 测试
 
 ```bash
-pnpm test              # 单元测试 + 组件测试（CI 会跑）
+pnpm test              # 单元测试 + 组件测试
+pnpm test:coverage     # 同上，并生成并校验覆盖率（CI 会跑）
 pnpm test:unit         # 仅主进程单元测试
 pnpm test:component    # 仅渲染进程组件测试
 ```
 
-**CI 流水线**：lint → typecheck → 单元/组件测试 → 生产构建 → E2E。CI 与 `Build & Release` 共用 `.github/actions/verify`，因此 E2E 失败会同时挡住日常 CI 和发版。
+**CI 流水线**：lint → typecheck → 带覆盖率的单元/组件测试 → 生产构建 → E2E。CI 与 `Build & Release` 共用 `.github/actions/verify`，因此 E2E 失败会同时挡住日常 CI 和发版。
 
 **E2E（本地）**：
 

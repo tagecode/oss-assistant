@@ -12,9 +12,9 @@ runs:
       shell: bash
       run: pnpm typecheck
 
-    - name: Unit & component tests
+    - name: Unit & component tests with coverage
       shell: bash
-      run: pnpm test
+      run: pnpm test:coverage
 
     - name: Production build
       shell: bash
@@ -38,6 +38,15 @@ runs:
     - name: E2E tests
       shell: bash
       run: bash scripts/ci-run-e2e.sh
+
+    - name: Upload coverage report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: coverage/
+        if-no-files-found: ignore
+        retention-days: 7
 
     - name: Upload E2E report
       if: failure()
