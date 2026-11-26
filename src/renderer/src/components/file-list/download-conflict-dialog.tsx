@@ -3,6 +3,7 @@ import { AlertTriangle } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle
@@ -59,6 +60,7 @@ export function DownloadConflictDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="max-w-lg"
+        data-testid="download-conflict-dialog"
         header={
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -68,7 +70,7 @@ export function DownloadConflictDialog({
           </DialogHeader>
         }
       >
-        <p className="text-sm text-muted-foreground">{tr('downloadConflictDesc')}</p>
+        <DialogDescription>{tr('downloadConflictDesc')}</DialogDescription>
 
         <div className="flex items-center gap-2 text-sm">
           <Label>{tr('applyToAll')}</Label>
@@ -77,6 +79,7 @@ export function DownloadConflictDialog({
               key={action}
               size="sm"
               variant={applyAll === action ? 'default' : 'outline'}
+              data-testid={`download-conflict-apply-${action}`}
               onClick={() => handleApplyAll(action)}
             >
               {tr(action)}
@@ -114,7 +117,9 @@ export function DownloadConflictDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {tr('cancel')}
           </Button>
-          <Button onClick={handleConfirm}>{tr('startDownload')}</Button>
+          <Button data-testid="download-conflict-confirm" onClick={handleConfirm}>
+            {tr('startDownload')}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

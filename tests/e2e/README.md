@@ -85,9 +85,22 @@ Mock Provider 还支持几个仅测试用的开关：
 - `E2E_QINIU_REGION`（可选，如 `z0`）
 
 未配置 Mock 且无凭证时 `cloud-workflow.spec.ts`、`transfer-progress.spec.ts` 与
-`multipart-transfer.spec.ts` 自动跳过；`credential-storage.spec.ts` 需要 Mock
+`multipart-transfer.spec.ts` 自动跳过；`account-management.spec.ts` 也依赖 Mock Provider。`credential-storage.spec.ts` 需要 Mock
 Provider 创建账户，未设置 `E2E_MOCK_CLOUD=1` 时也跳过。它只在没有系统密钥环的
 环境执行（CI 的 headless Linux），因此本地 macOS 上通常是 skipped。
+
+## 跨平台与真实云
+
+日常 CI 只在 Linux（Xvfb + openbox）跑，无法覆盖 macOS/Windows 的真实窗口、
+系统菜单与文件选择器。两个手动 workflow 补这两类验证：
+
+- `.github/workflows/cross-platform-e2e.yml`：在 `macos-latest` / `windows-latest`
+  上构建并跑完整 Mock E2E。
+- `.github/workflows/real-cloud-e2e.yml`：读取仓库 Secrets 的 `E2E_QINIU_*`，
+  只跑 `cloud-workflow` 与 `transfer-progress`；缺少 Secrets 会直接失败，避免
+  用例跳过却显示通过。
+
+真实云凭证也可在本地按“真实七牛云”一节的变量配置后直接运行 `pnpm test:e2e`。
 
 ## 失败排查
 

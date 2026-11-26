@@ -53,6 +53,7 @@ export function AccountDeleteDialog({
         <AlertDialogFooter>
           <AlertDialogCancel>{tr('cancel')}</AlertDialogCancel>
           <AlertDialogAction
+            data-testid="confirm-delete-account"
             onClick={onConfirm}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >

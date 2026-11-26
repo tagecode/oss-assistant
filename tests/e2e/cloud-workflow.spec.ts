@@ -83,22 +83,26 @@ test.describe('云存储关键路径', () => {
 
     const downloadDir = path.join(os.tmpdir(), `e2e-download-${Date.now()}`)
     fs.mkdirSync(downloadDir, { recursive: true })
+    const downloadPath = path.join(downloadDir, UPLOAD_FILE_NAME)
+    const uploadContent = fs.readFileSync(uploadFilePath, 'utf-8')
 
-    await window.evaluate(
-      async ({ account, bucket, key, localDir }) => {
-        const items = await window.api.resolveDownloadPaths(localDir, [key])
-        await window.api.createDownload({ accountId: account, bucket, items })
-      },
-      {
-        account: accountId!,
-        bucket: bucketName,
-        key: UPLOAD_FILE_NAME,
-        localDir: downloadDir
-      }
-    )
+    await window.evaluate(async (dir) => {
+      await window.api.updateSettings({ lastDownloadPath: dir })
+    }, downloadDir)
 
+    await window.getByTestId(testId.toolbarDownload).click()
     await waitForTransferSuccess(window, UPLOAD_FILE_NAME)
-    expect(fs.existsSync(path.join(downloadDir, UPLOAD_FILE_NAME))).toBe(true)
+    expect(fs.readFileSync(downloadPath, 'utf-8')).toBe(uploadContent)
+
+    // 目标文件已存在时必须走冲突对话框，而不是静默覆盖。
+    fs.writeFileSync(downloadPath, 'stale local content')
+    await row.getByRole('checkbox').check()
+    await window.getByTestId(testId.toolbarDownload).click()
+    await expect(window.getByTestId(testId.downloadConflictDialog)).toBeVisible()
+    await window.getByTestId(testId.downloadConflictApplyOverwrite).click()
+    await window.getByTestId(testId.downloadConflictConfirm).click()
+    await waitForTransferSuccess(window, UPLOAD_FILE_NAME)
+    expect(fs.readFileSync(downloadPath, 'utf-8')).toBe(uploadContent)
 
     await row.getByRole('checkbox').check()
     await window.getByTestId(testId.toolbarDelete).click()

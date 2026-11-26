@@ -10,7 +10,7 @@ set -euo pipefail
 # - Xvfb 没有窗口管理器，脚本会在其中启动 openbox；否则 maximize/minimize
 #   不会改变窗口状态，自绘标题栏用例会失败。
 # - E2E_MOCK_CLOUD=1 让 cloud-workflow / transfer-progress / multipart-transfer /
-#   credential-storage 使用内存 Mock Provider，无需真实云凭证。
+#   account-management / credential-storage 使用内存 Mock Provider，无需真实云凭证。
 # - runner 上没有系统 keyring，safeStorage 不可用。credential-storage 用例会真实
 #   打开设置页开启内存密钥；其余用例由 launch.ts 把
 #   allowInsecureCredentialStorage 预置进 userData，走的也是同一条代码路径。

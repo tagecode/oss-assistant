@@ -68,6 +68,8 @@ export function AccountList({
           {accounts.map((account) => (
             <div
               key={account.id}
+              data-testid="account-row"
+              data-account-name={account.name}
               className={cn(
                 'group relative flex w-full items-center rounded-md transition-colors',
                 selectedId === account.id
@@ -105,19 +107,21 @@ export function AccountList({
                       'data-[state=open]:bg-sidebar-accent data-[state=open]:text-foreground'
                     )}
                     aria-label={tr('accountActions', { name: account.name })}
+                    data-testid="account-menu"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <MoreHorizontal className="size-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => onEdit(account.id)}>
+                  <DropdownMenuItem data-testid="edit-account" onClick={() => onEdit(account.id)}>
                     <Pencil className="size-4" />
                     {tr('edit')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive"
+                    data-testid="delete-account"
                     onClick={() => onDelete(account.id)}
                   >
                     <Trash2 className="size-4" />

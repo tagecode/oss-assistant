@@ -33,6 +33,7 @@ export function Toolbar({
         variant="outline"
         onClick={(e) => onDownload(e.shiftKey)}
         disabled={disabled || selectedCount === 0}
+        data-testid="toolbar-download"
       >
         <Download className="size-4" />
         {tr('download')}

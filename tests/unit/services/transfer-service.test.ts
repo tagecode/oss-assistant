@@ -213,3 +213,222 @@ describe('TransferService', () => {
     expect(uploadMock).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('TransferService downloads, deletes and queue limits', () => {
+  let accountId: string
+
+  function createService(
+    providerOverrides: Partial<StorageProvider> = {},
+    concurrency = 1
+  ): TransferService {
+    const accountService = new AccountService(new CredentialService())
+    const created = accountService.create({
+      name: '下载测试',
+      provider: 'qiniu',
+      accessKeyId: 'AKID',
+      secretKey: 'SECRET'
+    })
+    accountId = created.id
+    const settingsService = new SettingsService()
+    settingsService.update({ transferConcurrency: concurrency })
+    return new TransferService(accountService, settingsService, {
+      qiniu: createMockProvider(providerOverrides)
+    })
+  }
+
+  it('downloads an object and reports progress', async () => {
+    const progress = vi.fn()
+    const service = createService({
+      downloadObject: vi.fn(async (_c, _b, _k, _p, options = {}) => {
+        progress()
+        options.onProgress?.({
+          transferredBytes: 50,
+          totalBytes: 100,
+          speedBytesPerSecond: 50,
+          estimatedRemainingSeconds: 1,
+          progressPercent: 50
+        })
+      })
+    })
+
+    const [task] = service.createDownloadTasks({
+      accountId,
+      bucket: 'demo',
+      items: [{ key: 'docs/a.txt', localPath: '/tmp/a.txt' }]
+    })
+
+    await vi.waitFor(() => {
+      expect(service.list().find((t) => t.id === task.id)?.status).toBe('success')
+    })
+
+    expect(progress).toHaveBeenCalledOnce()
+    const finished = service.list().find((t) => t.id === task.id)!
+    expect(finished.progressPercent).toBe(100)
+    expect(finished.localPath).toBe('/tmp/a.txt')
+    expect(finished.objectKey).toBe('docs/a.txt')
+  })
+
+  it('fails a download without retrying', async () => {
+    const downloadObject = vi.fn().mockRejectedValue(new Error('403 Forbidden'))
+    const service = createService({ downloadObject })
+
+    const [task] = service.createDownloadTasks({
+      accountId,
+      bucket: 'demo',
+      items: [{ key: 'docs/a.txt', localPath: '/tmp/a.txt' }]
+    })
+
+    await vi.waitFor(() => {
+      expect(service.list().find((t) => t.id === task.id)?.status).toBe('failed')
+    })
+
+    expect(downloadObject).toHaveBeenCalledOnce()
+    expect(service.list().find((t) => t.id === task.id)?.errorMessage).toBe('403 Forbidden')
+  })
+
+  it('marks a delete task failed when the provider reports a failed key', async () => {
+    const service = createService({
+      deleteObjects: vi.fn().mockResolvedValue({
+        succeeded: [],
+        failed: [{ key: 'a.txt', error: 'access denied' }]
+      })
+    })
+
+    const [task] = service.createDeleteTasks({
+      accountId,
+      bucket: 'demo',
+      keys: ['a.txt']
+    })
+
+    await vi.waitFor(() => {
+      expect(service.list().find((t) => t.id === task.id)?.status).toBe('failed')
+    })
+    expect(service.list().find((t) => t.id === task.id)?.errorMessage).toBe('access denied')
+  })
+
+  it('completes a delete task when the provider succeeds', async () => {
+    const service = createService({
+      deleteObjects: vi.fn().mockResolvedValue({ succeeded: ['a.txt'], failed: [] })
+    })
+
+    const [task] = service.createDeleteTasks({
+      accountId,
+      bucket: 'demo',
+      keys: ['a.txt']
+    })
+
+    await vi.waitFor(() => {
+      expect(service.list().find((t) => t.id === task.id)?.status).toBe('success')
+    })
+    expect(service.list().find((t) => t.id === task.id)?.objectKey).toBe('a.txt')
+  })
+
+  it('respects transferConcurrency while draining the queue', async () => {
+    let active = 0
+    let maxActive = 0
+    const releases: (() => void)[] = []
+    const uploadObject = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          active += 1
+          maxActive = Math.max(maxActive, active)
+          releases.push(() => {
+            active -= 1
+            resolve()
+          })
+        })
+    )
+    const service = createService({ uploadObject }, 2)
+
+    service.createUploadTasks({
+      accountId,
+      bucket: 'demo',
+      prefix: '',
+      localPaths: ['a.txt', 'b.txt', 'c.txt']
+    })
+
+    await vi.waitFor(() => {
+      expect(uploadObject).toHaveBeenCalledTimes(2)
+    })
+    expect(maxActive).toBe(2)
+    expect(service.list().filter((t) => t.status === 'queued')).toHaveLength(1)
+
+    releases.shift()!()
+    await vi.waitFor(() => {
+      expect(uploadObject).toHaveBeenCalledTimes(3)
+    })
+    expect(maxActive).toBe(2)
+
+    releases.splice(0).forEach((release) => release())
+    await vi.waitFor(() => {
+      expect(service.list().every((t) => t.status === 'success')).toBe(true)
+    })
+    expect(maxActive).toBe(2)
+  })
+
+  it('cancels an in-flight download', async () => {
+    const downloadObject = vi.fn(
+      (_c: unknown, _b: unknown, _k: unknown, _p: unknown, options = {}) =>
+        new Promise<void>((_resolve, reject) => {
+          if (options.signal?.aborted) {
+            reject(new Error('aborted'))
+            return
+          }
+          options.signal?.addEventListener('abort', () => reject(new Error('aborted')), {
+            once: true
+          })
+        })
+    )
+    const service = createService({ downloadObject })
+
+    const [task] = service.createDownloadTasks({
+      accountId,
+      bucket: 'demo',
+      items: [{ key: 'docs/a.txt', localPath: '/tmp/a.txt' }]
+    })
+
+    await vi.waitFor(() => {
+      expect(service.list().find((t) => t.id === task.id)?.status).toBe('running')
+    })
+    service.cancel(task.id)
+
+    await vi.waitFor(() => {
+      expect(service.list().find((t) => t.id === task.id)?.status).toBe('cancelled')
+    })
+    expect(service.list().find((t) => t.id === task.id)?.errorMessage).toBe('任务已取消')
+  })
+
+  it('clears successful and cancelled tasks but keeps failed ones', async () => {
+    const service = createService({
+      uploadObject: vi.fn(async (_c, _b, key) => {
+        if (key === 'bad.txt') throw new Error('permanent failure')
+      })
+    })
+
+    service.createUploadTasks({
+      accountId,
+      bucket: 'demo',
+      prefix: '',
+      localPaths: ['ok.txt']
+    })
+    await vi.waitFor(() => {
+      expect(service.list().every((t) => t.status === 'success')).toBe(true)
+    })
+
+    const [failed] = service.createUploadTasks({
+      accountId,
+      bucket: 'demo',
+      prefix: '',
+      localPaths: ['bad.txt']
+    })
+    await vi.waitFor(() => {
+      expect(service.list().find((t) => t.id === failed.id)?.status).toBe('failed')
+    })
+
+    service.clearCompleted()
+
+    expect(service.list().some((t) => t.status === 'success')).toBe(false)
+    expect(service.list().some((t) => t.status === 'cancelled')).toBe(false)
+    expect(service.list().find((t) => t.id === failed.id)?.status).toBe('failed')
+  })
+})
